@@ -76,6 +76,14 @@ pytest
 
 （agent 循环的测试用 fake LLM，不依赖真实 API。）
 
+## 调试日志
+
+日志级别通过 `LOG_LEVEL` 环境变量（或 `.env`）配置，默认 `INFO`。设成 `DEBUG` 会打印与 LLM 交互的**请求内容**（messages + tools）和**回包内容**：
+
+```bash
+LOG_LEVEL=DEBUG python examples/02_tool_agent.py
+```
+
 ## 学习路线
 
 从「主线」学起：`messages → llm → tools → agent`，学完就能看懂 `examples/02_tool_agent.py` 的每一行。完整路线见 [docs/roadmap.md](docs/roadmap.md)。

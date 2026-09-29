@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Sequence
 
 from openai import AsyncOpenAI
@@ -16,6 +17,8 @@ from agent_frame.config import Settings, get_settings
 from agent_frame.errors import LLMError
 from agent_frame.llm.base import ChatResult, LLMProvider, ToolSpec
 from agent_frame.messages import Message, ToolCall
+
+logger = logging.getLogger("agent_frame.llm")
 
 
 class OpenAICompatProvider:
@@ -44,10 +47,17 @@ class OpenAICompatProvider:
             if tools
             else None
         )
+        openai_messages = _to_openai_messages(messages)
+        logger.debug(
+            "LLM 请求 | model=%s | messages=%s | tools=%s",
+            self._settings.model,
+            openai_messages,
+            payload_tools,
+        )
         try:
             resp = await self._client.chat.completions.create(
                 model=self._settings.model,
-                messages=_to_openai_messages(messages),
+                messages=openai_messages,
                 tools=payload_tools,
             )
         except Exception as exc:  # noqa: BLE001 - 统一转成框架异常
@@ -64,6 +74,7 @@ class OpenAICompatProvider:
                 )
                 for tc in choice.tool_calls
             ]
+        logger.debug("LLM 响应 | content=%r | tool_calls=%s", choice.content, tool_calls)
         return ChatResult(content=choice.content, tool_calls=tool_calls)
 
 

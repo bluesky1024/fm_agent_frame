@@ -3,12 +3,14 @@
 让 Agent 自主决定调用 calculator / get_current_time 工具来回答问题。
 
 运行：python examples/02_tool_agent.py
+调试：LOG_LEVEL=DEBUG python examples/02_tool_agent.py
 前提：已设置 DEEPSEEK_API_KEY（环境变量或 .env 文件）。
 """
 
 from __future__ import annotations
 
 import asyncio
+import logging
 
 from agent_frame.agent import ToolUseAgent
 from agent_frame.config import get_settings
@@ -19,6 +21,10 @@ from agent_frame.tools.builtin import CalculatorTool, CurrentTimeTool
 
 async def main() -> None:
     settings = get_settings()
+    logging.basicConfig(
+        level=settings.log_level.upper(),
+        format="%(levelname)s %(name)s: %(message)s",
+    )
     llm = OpenAICompatProvider(settings)
     registry = ToolRegistry([CalculatorTool(), CurrentTimeTool()])
     agent = ToolUseAgent(

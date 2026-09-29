@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     request_timeout: float = 60.0
     max_retries: int = 2
 
+    # 日志（对应环境变量 LOG_LEVEL，如 DEBUG / INFO / WARNING）
+    log_level: str = "INFO"
+
 
 @lru_cache
 def get_settings() -> Settings:
