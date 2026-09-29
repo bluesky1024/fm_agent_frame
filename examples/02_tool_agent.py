@@ -10,21 +10,18 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 
 from agent_frame.agent import ToolUseAgent
 from agent_frame.config import get_settings
 from agent_frame.llm import OpenAICompatProvider
+from agent_frame.obs import setup_logging
 from agent_frame.tools import ToolRegistry
 from agent_frame.tools.builtin import CalculatorTool, CurrentTimeTool
 
 
 async def main() -> None:
     settings = get_settings()
-    logging.basicConfig(
-        level=settings.log_level.upper(),
-        format="%(levelname)s %(name)s: %(message)s",
-    )
+    setup_logging(settings.log_level, settings.log_dir)
     llm = OpenAICompatProvider(settings)
     registry = ToolRegistry([CalculatorTool(), CurrentTimeTool()])
     agent = ToolUseAgent(

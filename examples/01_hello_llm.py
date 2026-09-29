@@ -8,19 +8,16 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 
 from agent_frame.config import get_settings
 from agent_frame.llm import OpenAICompatProvider
 from agent_frame.messages import Message
+from agent_frame.obs import setup_logging
 
 
 async def main() -> None:
     settings = get_settings()
-    logging.basicConfig(
-        level=settings.log_level.upper(),
-        format="%(levelname)s %(name)s: %(message)s",
-    )
+    setup_logging(settings.log_level, settings.log_dir)
     provider = OpenAICompatProvider(settings)
     reply = await provider.chat(
         [Message.system("你是一个简洁的中文助手。"), Message.user("用一句话解释什么是 Agent？")]

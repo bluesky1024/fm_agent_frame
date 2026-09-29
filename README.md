@@ -78,7 +78,7 @@ pytest
 
 ## 调试日志
 
-日志级别通过 `LOG_LEVEL` 环境变量（或 `.env`）配置，默认 `INFO`。设成 `DEBUG` 会打印与 LLM 交互的**请求内容**（messages + tools）和**回包内容**：
+日志同时输出到**控制台**和 `log/agent.log` 文件（目录由 `LOG_DIR` 配置，默认 `log`）。级别通过 `LOG_LEVEL` 环境变量（或 `.env`）配置，设成 `DEBUG` 会打印与 LLM 交互的**请求内容**（messages + tools）和**回包内容**：
 
 ```bash
 LOG_LEVEL=DEBUG python examples/02_tool_agent.py

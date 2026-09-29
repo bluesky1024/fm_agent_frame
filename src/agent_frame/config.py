@@ -27,7 +27,9 @@ class Settings(BaseSettings):
     max_retries: int = 2
 
     # 日志（对应环境变量 LOG_LEVEL，如 DEBUG / INFO / WARNING）
-    log_level: str = "INFO"
+    log_level: str = "DEBUG"
+    # 日志输出目录：文件写到 <log_dir>/agent.log
+    log_dir: str = "log"
 
 
 @lru_cache
