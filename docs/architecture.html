@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>fm_agent_frame — Agent 框架架构与模块分层</title>
+<style>
+  :root {
+    --ok: #2ea043;      --ok-bg: #e6f4ea;
+    --part: #d29922;    --part-bg: #fdf3d9;
+    --stub: #0969da;    --stub-bg: #e6f0ff;
+    --ink: #1f2328;     --muted: #6e7781;
+    --line: #d0d7de;    --bg: #f6f8fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    color: var(--ink); background: var(--bg);
+    margin: 0; padding: 32px 20px 60px; line-height: 1.55;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+  h2 { font-size: 18px; margin: 36px 0 12px; border-left: 4px solid #0969da; padding-left: 10px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; font-size: 13px; }
+  .legend .dot { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .ok-dot   { background: var(--ok); }
+  .part-dot { background: var(--part); }
+  .stub-dot { background: var(--stub); }
+
+  /* ---- 分层架构 ---- */
+  .layer {
+    border: 1px solid var(--line); border-radius: 10px;
+    background: #fff; margin-bottom: 10px; overflow: hidden;
+  }
+  .layer-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; font-weight: 600; font-size: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .layer-head .idx {
+    background: var(--ink); color: #fff; border-radius: 50%;
+    width: 22px; height: 22px; display: inline-flex; align-items: center;
+    justify-content: center; font-size: 12px; flex: none;
+  }
+  .layer-head .tag { font-weight: 400; color: var(--muted); font-size: 12px; }
+  .layer-body { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px; }
+  .mod {
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+    min-width: 150px; flex: 1 1 150px; position: relative;
+  }
+  .mod .mname { font-weight: 600; font-size: 14px; }
+  .mod .mname code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .mod .mdesc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .mod .badge {
+    position: absolute; top: 8px; right: 8px; font-size: 11px;
+    padding: 1px 7px; border-radius: 10px; font-weight: 600;
+  }
+  .mod.ok   { background: var(--ok-bg);   }
+  .mod.part { background: var(--part-bg); }
+  .mod.stub { background: var(--stub-bg); }
+  .badge.ok   { background: var(--ok);   color: #fff; }
+  .badge.part { background: var(--part); color: #fff; }
+  .badge.stub { background: var(--stub); color: #fff; }
+
+  .depend { text-align: center; color: var(--muted); font-size: 12px; padding: 2px 0 8px; }
+  .depend b { color: var(--ink); }
+
+  /* ---- 核心数据流 ---- */
+  .flow { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+  .flow-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .node {
+    border: 1.5px solid var(--ink); border-radius: 8px; padding: 8px 12px;
+    font-size: 13px; font-weight: 600; background: #fff; text-align: center;
+  }
+  .node.core { border-color: #d1242f; background: #ffeef0; }
+  .node.llm  { border-color: #8250df; background: #f6efff; }
+  .node.tool { border-color: #1f883d; background: #e6f4ea; }
+  .arrow { color: var(--muted); font-size: 18px; font-weight: 700; }
+  .flow .branch { margin: 16px 0 4px; text-align: center; font-size: 13px; color: var(--muted); }
+  .loopback { margin-top: 14px; text-align: center; font-size: 12.5px; color: var(--muted); }
+  .loopback b { color: #d1242f; }
+  .flow-note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>fm_agent_frame · LLM Agent 框架架构</h1>
+  <p class="sub">从零手写的 Agent 编排框架（Python 3.12 · async · DeepSeek）—— 五层架构，上层依赖下层</p>
+
+  <div class="legend">
+    <span><span class="dot ok-dot"></span>✅ 已实现</span>
+    <span><span class="dot part-dot"></span>🟡 部分实现</span>
+    <span><span class="dot stub-dot"></span>🔵 打桩（只有接口）</span>
+  </div>
+
+  <h2>① 分层架构</h2>
+
+  <!-- 第 1 层：应用与服务 -->
+  <div class="layer">
+    <div class="layer-head"><span class="idx">1</span>应用与服务层 <span class="tag">Application &amp; Service</span></div>
+    <div class="layer-body">
+      <div class="mod ok"><span class="badge ok">✅</span>
+        <div class="mname"><code>examples/</code></div>
+        <div class="mdesc">CLI 演示：单轮问答 + tool 调用</div>
+      </div>
+      <div class="mod stub"><span class="badge stub">🔵</span>
+        <div class="mname"><code>server</code></div>
+        <div class="mdesc">FastAPI HTTP 服务（接 Vue/React）</div>
+      </div>
+      <div class="mod stub"><span class="badge stub">🔵</span>
+        <div class="mname"><code>eval</code></div>
+        <div class="mdesc">评测 Agent 输出质量</div>
+      </div>
+    </div>
+  </div>
+  <div class="depend">▲ <b>上层依赖下层</b> ▲</div>
+
+  <!-- 第 2 层：编排 -->
+  <div class="layer">
+    <div class="layer-head"><span class="idx">2</span>编排层 <span class="tag">Orchestration（核心）</span></div>
+    <div class="layer-body">
+      <div class="mod ok"><span class="badge ok">✅</span>
+        <div class="mname"><code>agent</code> · ToolUseAgent</div>
+        <div class="mdesc"><b>心脏</b>：ReAct 循环「思考→调工具→观察→再思考」</div>
+      </div>
+      <div class="mod stub"><span class="badge stub">🔵</span>
+        <div class="mname"><code>multi_agent</code></div>
+        <div class="mdesc">多 Agent 协作编排</div>
+      </div>
+    </div>
+  </div>
+  <div class="depend">▲ <b>上层依赖下层</b> ▲</div>
+
+  <!-- 第 3 层：能力接入 -->
+  <div class="layer">
+    <div class="layer-head"><span class="idx">3</span>能力接入层 <span class="tag">Capabilities</span></div>
+    <div class="layer-body">
+      <div class="mod ok"><span class="badge ok">✅</span>
+        <div class="mname"><code>llm</code></div>
+        <div class="mdesc">LLMProvider 协议 + OpenAI 兼容 DeepSeek</div>
+      </div>
+      <div class="mod ok"><span class="badge ok">✅</span>
+        <div class="mname"><code>tools</code></div>
+        <div class="mdesc">Tool 协议 + ToolRegistry + 内置工具</div>
+      </div>
+      <div class="mod part"><span class="badge part">🟡</span>
+        <div class="mname"><code>memory</code></div>
+        <div class="mdesc">短时记忆（进程内）；长时/向量记忆留空</div>
+      </div>
+      <div class="mod stub"><span class="badge stub">🔵</span>
+        <div class="mname"><code>retrieval</code></div>
+        <div class="mdesc">RAG 检索（向量/全文）</div>
+      </div>
+      <div class="mod part"><span class="badge part">🟡</span>
+        <div class="mname"><code>prompt</code></div>
+        <div class="mdesc">PromptTemplate 极简实现</div>
+      </div>
+    </div>
+  </div>
+  <div class="depend">▲ <b>上层依赖下层</b> ▲</div>
+
+  <!-- 第 4 层：数据模型 -->
+  <div class="layer">
+    <div class="layer-head"><span class="idx">4</span>数据模型层 <span class="tag">Data Model</span></div>
+    <div class="layer-body">
+      <div class="mod ok"><span class="badge ok">✅</span>
+        <div class="mname"><code>messages</code></div>
+        <div class="mdesc">System/User/Assistant/Tool/ToolCall</div>
+      </div>
+    </div>
+  </div>
+  <div class="depend">▲ <b>上层依赖下层</b> ▲</div>
+
+  <!-- 第 5 层：基础设施 -->
+  <div class="layer">
+    <div class="layer-head"><span class="idx">5</span>基础设施层 <span class="tag">Infrastructure</span></div>
+    <div class="layer-body">
+      <div class="mod ok"><span class="badge ok">✅</span>
+        <div class="mname"><code>config</code></div>
+        <div class="mdesc">pydantic-settings 读 env/.env</div>
+      </div>
+      <div class="mod ok"><span class="badge ok">✅</span>
+        <div class="mname"><code>errors</code></div>
+        <div class="mdesc">统一异常体系</div>
+      </div>
+      <div class="mod part"><span class="badge part">🟡</span>
+        <div class="mname"><code>obs</code></div>
+        <div class="mdesc">Tracer 协议 + ConsoleTracer</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>② 核心数据流 · ReAct 循环</h2>
+  <div class="flow">
+    <div class="flow-row">
+      <div class="node">用户输入</div>
+      <span class="arrow">→</span>
+      <div class="node core">agent<br>ToolUseAgent</div>
+      <span class="arrow">→</span>
+      <div class="node">memory<br>load 历史</div>
+      <span class="arrow">→</span>
+      <div class="node llm">llm<br>chat(messages, tools)</div>
+    </div>
+
+    <div class="branch">返回 Assistant 消息，是否含 <code>tool_calls</code>？</div>
+
+    <div class="flow-row">
+      <div class="node tool">是 → tools<br>逐个 Tool.run</div>
+      <span class="arrow">→</span>
+      <div class="node">ToolMessage 回填结果</div>
+      <span class="arrow">→</span>
+      <div class="node llm">再调 llm</div>
+    </div>
+
+    <div class="flow-row" style="margin-top:16px;">
+      <div class="node">否 → 最终文本</div>
+      <span class="arrow">→</span>
+      <div class="node">AgentResult</div>
+    </div>
+
+    <div class="loopback">🔁 <b>含工具调用的分支</b> 会循环回到 llm，直到给出纯文本回答（<b>上限 8 步</b>防死循环）</div>
+    <div class="flow-note">工具执行出错时，异常被包装成 ToolMessage 回填给 LLM（让它自行修正），而非中断循环。</div>
+  </div>
+
+</div>
+</body>
+</html>

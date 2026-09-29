@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>端到端数据流 · 用户发起 → 后台处理 → 呈现结果</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: #f6f8fa; color: #1f2328; margin: 0; padding: 28px 16px 60px;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: #6e7781; font-size: 14px; margin: 0 0 18px; }
+  .card { background: #fff; border: 1px solid #d0d7de; border-radius: 10px; padding: 10px; overflow-x: auto; }
+  svg text { font-family: inherit; }
+  .note { margin-top: 14px; font-size: 13px; color: #57606a; line-height: 1.6; }
+  .note b { color: #d1242f; }
+  .legend { display: flex; gap: 16px; font-size: 13px; margin: 10px 0 4px; color: #57606a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>端到端数据流 · 一次完整对话的生命周期</h1>
+  <p class="sub">用户发起 → 前台（当前 CLI / 未来 HTTP）→ Agent 编排 → LLM + 工具 + 记忆 → 结果回传呈现</p>
+
+  <div class="legend">
+    <span>—— 实线 = 请求 / 调用</span>
+    <span>- - 虚线 = 返回 / 回填</span>
+    <span style="color:#d1242f">红色框 = ReAct 循环</span>
+  </div>
+
+  <div class="card">
+  <svg width="1220" height="980" viewBox="0 0 1220 980" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#57606a"/>
+      </marker>
+      <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#d1242f"/>
+      </marker>
+    </defs>
+
+    <!-- ReAct 循环框 -->
+    <rect x="445" y="300" width="490" height="420" rx="12" fill="#fff5f5" stroke="#d1242f" stroke-width="1.5" stroke-dasharray="6 4"/>
+    <text x="690" y="322" font-size="13" font-weight="700" fill="#d1242f" text-anchor="middle">ReAct 循环（可能多轮，直到 LLM 不再返回 tool_calls）</text>
+
+    <!-- 顶部角色框 -->
+    <g font-size="14" font-weight="700" text-anchor="middle">
+      <rect x="20"  y="20" width="110" height="40" rx="8" fill="#e6f4ea" stroke="#2ea043"/>
+      <text x="75"  y="45" fill="#1f2328">用户</text>
+
+      <rect x="210" y="20" width="120" height="40" rx="8" fill="#e6f0ff" stroke="#0969da"/>
+      <text x="270" y="45" fill="#1f2328">前台 / 入口</text>
+
+      <rect x="415" y="20" width="120" height="40" rx="8" fill="#ffeef0" stroke="#d1242f"/>
+      <text x="475" y="45" fill="#1f2328">Agent</text>
+
+      <rect x="645" y="20" width="120" height="40" rx="8" fill="#f6efff" stroke="#8250df"/>
+      <text x="705" y="45" fill="#1f2328">LLM (DeepSeek)</text>
+
+      <rect x="850" y="20" width="120" height="40" rx="8" fill="#e6f4ea" stroke="#1f883d"/>
+      <text x="910" y="45" fill="#1f2328">Tools 工具</text>
+
+      <rect x="1080" y="20" width="120" height="40" rx="8" fill="#fdf3d9" stroke="#d29922"/>
+      <text x="1140" y="45" fill="#1f2328">Memory 记忆</text>
+    </g>
+
+    <!-- 生命线 -->
+    <g stroke="#d0d7de" stroke-width="1.2" stroke-dasharray="4 4">
+      <line x1="75"  y1="60" x2="75"  y2="950"/>
+      <line x1="270" y1="60" x2="270" y2="950"/>
+      <line x1="475" y1="60" x2="475" y2="950"/>
+      <line x1="705" y1="60" x2="705" y2="950"/>
+      <line x1="910" y1="60" x2="910" y2="950"/>
+      <line x1="1140" y1="60" x2="1140" y2="950"/>
+    </g>
+
+    <!-- 1. 用户 → 前台 -->
+    <line x1="75" y1="110" x2="270" y2="110" stroke="#57606a" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="172" y="100" font-size="12.5" fill="#24292f" text-anchor="middle">输入问题「3⁴ + 10 = ?」</text>
+
+    <!-- 2. 前台 → Agent -->
+    <line x1="270" y1="180" x2="475" y2="180" stroke="#57606a" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="372" y="170" font-size="12.5" fill="#24292f" text-anchor="middle">agent.run(task)</text>
+
+    <!-- 3. Agent → Memory load -->
+    <line x1="475" y1="250" x2="1140" y2="250" stroke="#57606a" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="807" y="240" font-size="12.5" fill="#24292f" text-anchor="middle">memory.load(session_id)</text>
+    <line x1="1140" y1="282" x2="475" y2="282" stroke="#57606a" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+    <text x="807" y="272" font-size="12" fill="#57606a" text-anchor="middle">历史消息</text>
+
+    <!-- 4. Agent → LLM 第1轮 -->
+    <line x1="475" y1="345" x2="705" y2="345" stroke="#d1242f" stroke-width="1.6" marker-end="url(#arr-red)"/>
+    <text x="590" y="335" font-size="12.5" fill="#d1242f" text-anchor="middle">chat(messages + tools) ①</text>
+
+    <!-- 5. LLM → Agent 返回 tool_calls -->
+    <line x1="705" y1="410" x2="475" y2="410" stroke="#d1242f" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#arr-red)"/>
+    <text x="590" y="400" font-size="12" fill="#d1242f" text-anchor="middle">assistant + tool_calls ①</text>
+
+    <!-- 6. Agent → Tools -->
+    <line x1="475" y1="475" x2="910" y2="475" stroke="#d1242f" stroke-width="1.6" marker-end="url(#arr-red)"/>
+    <text x="692" y="465" font-size="12.5" fill="#d1242f" text-anchor="middle">call("calculator", {expression})</text>
+
+    <!-- 7. Tools → Agent 返回结果 -->
+    <line x1="910" y1="540" x2="475" y2="540" stroke="#d1242f" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#arr-red)"/>
+    <text x="692" y="530" font-size="12" fill="#d1242f" text-anchor="middle">"91" → ToolMessage 回填</text>
+
+    <!-- 8. Agent → LLM 第2轮 -->
+    <line x1="475" y1="610" x2="705" y2="610" stroke="#d1242f" stroke-width="1.6" marker-end="url(#arr-red)"/>
+    <text x="590" y="600" font-size="12.5" fill="#d1242f" text-anchor="middle">chat(带回填结果) ②</text>
+
+    <!-- 9. LLM → Agent 最终文本 -->
+    <line x1="705" y1="675" x2="475" y2="675" stroke="#d1242f" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#arr-red)"/>
+    <text x="590" y="665" font-size="12" fill="#d1242f" text-anchor="middle">纯文本最终答案 ②</text>
+
+    <!-- 10. Agent → Memory save -->
+    <line x1="475" y1="750" x2="1140" y2="750" stroke="#57606a" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="807" y="740" font-size="12.5" fill="#24292f" text-anchor="middle">memory.save(session_id, messages)</text>
+
+    <!-- 11. Agent → 前台 返回结果 -->
+    <line x1="475" y1="820" x2="270" y2="820" stroke="#57606a" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="372" y="810" font-size="12.5" fill="#24292f" text-anchor="middle">AgentResult(output, steps)</text>
+
+    <!-- 12. 前台 → 用户 呈现 -->
+    <line x1="270" y1="890" x2="75" y2="890" stroke="#57606a" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="172" y="880" font-size="12.5" fill="#24292f" text-anchor="middle">呈现最终答案</text>
+  </svg>
+  </div>
+
+  <div class="note">
+    <b>要点：</b>
+    <br>① 第 1 轮 LLM 调用不一定给答案，而是返回「要调哪个工具 + 参数」；Agent 执行工具后，把结果作为 <code>ToolMessage</code> 回填，进入下一轮。
+    <br>② 第 2 轮起 LLM 能「看到」上一步工具结果，据此决定继续调工具、还是给出最终文本——这就是 <b>ReAct</b>（Reasoning + Acting）的循环。
+    <br>③ 循环受 <code>max_steps=8</code> 约束，防止死循环。
+    <br>④ 当前「前台 / 入口」是 CLI（<code>examples/02_tool_agent.py</code> 里的 <code>print</code>）；未来换成 <code>server</code>（FastAPI）时，只有最左、最右两段变（HTTP 请求/响应），中间 Agent 编排完全不变——这正是分层解耦的好处。
+  </div>
+</div>
+</body>
+</html>
