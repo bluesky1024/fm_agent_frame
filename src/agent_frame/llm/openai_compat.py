@@ -49,10 +49,15 @@ class OpenAICompatProvider:
         )
         openai_messages = _to_openai_messages(messages)
         logger.debug(
-            "LLM 请求 | model=%s | messages=%s | tools=%s",
-            self._settings.model,
-            openai_messages,
-            payload_tools,
+            "LLM 请求 | %s",
+            json.dumps(
+                {
+                    "model": self._settings.model,
+                    "messages": openai_messages,
+                    "tools": payload_tools,
+                },
+                ensure_ascii=False,
+            ),
         )
         try:
             resp = await self._client.chat.completions.create(
@@ -74,7 +79,10 @@ class OpenAICompatProvider:
                 )
                 for tc in choice.tool_calls
             ]
-        logger.debug("LLM 响应 | content=%r | tool_calls=%s", choice.content, tool_calls)
+        logger.debug(
+            "LLM 响应 | %s",
+            json.dumps(resp.model_dump(mode="json"), ensure_ascii=False),
+        )
         return ChatResult(content=choice.content, tool_calls=tool_calls)
 
 

@@ -16,7 +16,9 @@ def setup_logging(log_level: str = "INFO", log_dir: str = "log") -> None:
     log_dir_path = Path(log_dir)
     log_dir_path.mkdir(parents=True, exist_ok=True)
 
-    formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    formatter = logging.Formatter(
+        "%(asctime)s %(levelname)s %(filename)s:%(lineno)d %(name)s: %(message)s"
+    )
 
     root = logging.getLogger()
     root.setLevel(level)

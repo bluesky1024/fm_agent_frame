@@ -17,6 +17,9 @@ class _FakeChoice:
 class _FakeResponse:
     choices = [_FakeChoice()]
 
+    def model_dump(self, mode="json"):
+        return {"choices": [{"message": {"role": "assistant", "content": "你好"}}]}
+
 
 class _FakeCompletions:
     async def create(self, **kwargs):
