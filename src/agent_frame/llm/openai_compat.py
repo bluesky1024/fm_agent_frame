@@ -15,7 +15,7 @@ from openai import AsyncOpenAI
 
 from agent_frame.config import Settings, get_settings
 from agent_frame.errors import LLMError
-from agent_frame.llm.base import ChatResult, LLMProvider, ToolSpec
+from agent_frame.llm.base import ChatResult, ToolSpec
 from agent_frame.messages import Message, ToolCall
 
 logger = logging.getLogger("agent_frame.llm")
