@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from typing import Any, ClassVar, Protocol
 
 from agent_frame.llm.base import ToolSpec
@@ -13,14 +14,16 @@ class Tool(Protocol):
     实现约定：
     - name / description / parameters 用类变量声明；
       parameters 是一段 JSON Schema，告诉 LLM 这个工具接受哪些参数。
-    - run 接收 **kwargs（对应 JSON Schema 里的参数），返回一段文本结果。
+    - run 接收 JSON Schema 里声明的参数（各工具签名不同），返回一段文本结果。
     """
 
     name: ClassVar[str]
     description: ClassVar[str]
     parameters: ClassVar[dict[str, Any]]
 
-    async def run(self, **kwargs: Any) -> str: ...
+    # run 的具体参数由 parameters(JSON Schema) 动态决定，静态类型无法逐一定义；
+    # 用 Callable[..., Awaitable[str]] 表示「任意参数、返回可等待的字符串」。
+    run: Callable[..., Awaitable[str]]
 
 
 def to_tool_spec(tool: Tool) -> ToolSpec:
