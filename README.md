@@ -35,7 +35,7 @@
 
 ## 模块地图
 
-| 模块 | 职责 | 首期状态 |
+| 模块 | 职责 | 状态 |
 |---|---|---|
 | `messages` | 消息模型（System/User/Assistant/Tool/ToolCall） | ✅ 实现 |
 | `config` | 配置加载（pydantic-settings，API key 走 env） | ✅ 实现 |
@@ -43,15 +43,17 @@
 | `llm` | `LLMProvider` 协议 + `OpenAICompatProvider` 实现 | ✅ 实现 |
 | `tools` | `Tool` 协议 + `ToolRegistry` + 内置工具 | ✅ 实现 |
 | `agent` | `Agent` 协议 + `ToolUseAgent`（ReAct 循环） | ✅ 实现 |
-| `memory` | `Memory` 协议 + `ConversationMemory` | 🟡 部分 |
-| `prompt` | `PromptTemplate` 协议 | 🟡 部分 |
-| `obs` | `Tracer` 协议 + 结构化日志 | 🟡 部分 |
-| `retrieval` | `Retriever` 协议（RAG） | 🔵 打桩 |
-| `multi_agent` | 多 Agent 编排协议 | 🔵 打桩 |
-| `eval` | 评测协议 | 🔵 打桩 |
-| `server` | FastAPI 服务（为前台预留） | 🔵 打桩 |
+| `memory` | 多层记忆接口（对话/画像/语义/情景）+ `ConversationMemory` | 🟡 接口全·极简实现 |
+| `prompt` | 模板/多消息/版本库/示例选择接口 + `StringTemplatePrompt` | 🟡 接口全·极简实现 |
+| `obs` | `Tracer` 协议 + `setup_logging` 双路日志 | 🟡 接口全·极简实现 |
+| `retrieval` | RAG 流水线接口（Loader/Chunker/Embedder/VectorStore/Retriever/Reranker） | 🔵 接口全·零实现 |
+| `multi_agent` | 编排接口（AgentSpec/SubTask/TaskDecomposer/Orchestrator） | 🔵 接口全·零实现 |
+| `eval` | 评测接口（EvalCase/Evaluator/EvalSuite/EvalReport） | 🔵 接口全·零实现 |
+| `server` | HTTP 服务接口（ChatRequest/AgentService/SessionManager） | 🔵 接口全·零实现 |
 
-> ✅ 实现 / 🟡 部分实现 / 🔵 打桩（接口完备、零实现）
+> ✅ 实现 / 🟡 接口完整 + 极简实现 / 🔵 接口完整、零实现
+>
+> 13 个模块的**接口均已定义完毕**：打开任意模块的 `base.py`，通过 Protocol 和 docstring 即可看清它对外提供的能力。主链路（`messages`/`llm`/`tools`/`agent`）已完整可跑，其余模块待逐个实现。
 
 ## 快速开始
 
