@@ -68,6 +68,9 @@ cp .env.example .env
 
 # 3. 跑首个演示：Agent 循环 + 工具调用
 python examples/02_tool_agent.py
+
+# 4. 交互式多轮对话（输入 exit 退出）
+python examples/03_interactive.py
 ```
 
 ## 运行测试

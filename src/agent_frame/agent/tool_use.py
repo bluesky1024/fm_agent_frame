@@ -30,12 +30,23 @@ class ToolUseAgent:
         self._system_prompt = system_prompt
         self._max_steps = max_steps
 
-    async def run(self, task: str, *, memory: Memory | None = None) -> AgentResult:
+    async def run(
+        self,
+        task: str,
+        *,
+        memory: Memory | None = None,
+        session_id: str = "default",
+    ) -> AgentResult:
+        """处理一次用户输入（单轮）。
+
+        传入同一个 memory + session_id 即可实现多轮对话：每次都会先
+        load 该会话的历史，跑完再 save 回去。
+        """
         messages: list[Message] = []
         if self._system_prompt:
             messages.append(Message.system(self._system_prompt))
         if memory is not None:
-            messages.extend(await memory.load("default"))
+            messages.extend(await memory.load(session_id))
         messages.append(Message.user(task))
 
         tool_specs = self._tools.to_tool_specs()
@@ -65,7 +76,7 @@ class ToolUseAgent:
             messages.append(Message.assistant(content=final))
             steps.append(AgentStep(index=index, content=final))
             if memory is not None:
-                await memory.save("default", messages)
+                await memory.save(session_id, messages)
             return AgentResult(output=final, steps=steps)
 
         raise AgentLoopError(f"超过最大步数 {self._max_steps} 仍未收敛")

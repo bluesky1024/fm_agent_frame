@@ -27,4 +27,10 @@ class AgentResult(BaseModel):
 class Agent(Protocol):
     """Agent 协议：接收一个任务，返回最终回答。"""
 
-    async def run(self, task: str, *, memory: Memory | None = None) -> AgentResult: ...
+    async def run(
+        self,
+        task: str,
+        *,
+        memory: Memory | None = None,
+        session_id: str = "default",
+    ) -> AgentResult: ...
