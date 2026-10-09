@@ -6,13 +6,17 @@ import logging
 from pathlib import Path
 
 
-def setup_logging(log_level: str = "INFO", log_dir: str = "log") -> None:
-    """初始化日志系统，输出分三路。
+def setup_logging(
+    log_level: str = "INFO", log_dir: str = "log", console: bool = True
+) -> None:
+    """初始化日志系统。
 
     - log_level: 日志级别（DEBUG / INFO / WARNING ...），大小写不敏感
     - log_dir:   文件输出目录，默认 "log"
+    - console:   是否在终端（控制台）打印日志，默认 True
 
-    1. 控制台：主日志（不含 LLM 交互）
+    输出分三路：
+    1. 控制台（可选）：主日志（不含 LLM 交互）
     2. <log_dir>/agent.log：主日志（不含 LLM 交互）
     3. <log_dir>/llm.log：仅 LLM 请求 / 回包（原始 JSON）
     """
@@ -29,9 +33,10 @@ def setup_logging(log_level: str = "INFO", log_dir: str = "log") -> None:
     root.setLevel(level)
     root.handlers.clear()
 
-    console = logging.StreamHandler()
-    console.setFormatter(formatter)
-    root.addHandler(console)
+    if console:
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        root.addHandler(console_handler)
 
     file_handler = logging.FileHandler(log_dir_path / "agent.log", encoding="utf-8")
     file_handler.setFormatter(formatter)

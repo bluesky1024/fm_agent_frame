@@ -85,7 +85,7 @@ pytest
 
 日志分两路输出（目录由 `LOG_DIR` 配置，默认 `log`）：
 
-- **主日志**：控制台 + `log/agent.log`，记录框架运行日志（不含 LLM 交互）
+- **主日志**：控制台（可用 `LOG_CONSOLE=false` 关闭）+ `log/agent.log`，记录框架运行日志（不含 LLM 交互）
 - **LLM 交互日志**：`log/llm.log`，只记录与 LLM 的**请求**（messages + tools）和**回包**的原始 JSON
 
 级别通过 `LOG_LEVEL` 环境变量（或 `.env`）配置，设成 `DEBUG` 会打印 LLM 请求/回包：

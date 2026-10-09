@@ -21,7 +21,7 @@ from agent_frame.tools.builtin import CalculatorTool, CurrentTimeTool
 
 async def main() -> None:
     settings = get_settings()
-    setup_logging(settings.log_level, settings.log_dir)
+    setup_logging(settings.log_level, settings.log_dir, console=settings.log_console)
     llm = OpenAICompatProvider(settings)
     registry = ToolRegistry([CalculatorTool(), CurrentTimeTool()])
     agent = ToolUseAgent(

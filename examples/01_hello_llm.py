@@ -17,7 +17,7 @@ from agent_frame.obs import setup_logging
 
 async def main() -> None:
     settings = get_settings()
-    setup_logging(settings.log_level, settings.log_dir)
+    setup_logging(settings.log_level, settings.log_dir, console=settings.log_console)
     provider = OpenAICompatProvider(settings)
     reply = await provider.chat(
         [Message.system("你是一个简洁的中文助手。"), Message.user("用一句话解释什么是 Agent？")]

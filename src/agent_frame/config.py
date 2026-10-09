@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     log_level: str = "DEBUG"
     # 日志输出目录：文件写到 <log_dir>/agent.log
     log_dir: str = "log"
+    # 是否在终端（控制台）打印日志
+    log_console: bool = True
 
 
 @lru_cache
