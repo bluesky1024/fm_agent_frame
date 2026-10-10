@@ -7,6 +7,7 @@ LLM 是无状态的，记忆系统负责在多次调用之间保存与召回上�
 - 用户画像（ProfileMemory）：跨会话持久的用户稳定事实
 - 语义记忆（SemanticMemory）：从对话中提炼出的长期事实，按相关性召回
 - 情景记忆（EpisodicMemory）：带时间戳的具体事件
+- 摘要压缩（Summarizer / SummaryBufferMemory）：超过阈值把旧历史压成摘要，省 token
 
 本文件只定义接口（Protocol + 数据模型），不提供具体实现。
 """
@@ -146,3 +147,35 @@ class AgentMemory(Protocol):
     profile: ProfileMemory
     semantic: SemanticMemory
     episodic: EpisodicMemory
+
+
+# ---------- 摘要压缩（预留，未实现） ----------
+
+
+class MemorySummary(BaseModel):
+    """一段对话历史的摘要（用于省 token 的上下文压缩）。"""
+
+    content: str
+    message_count: int = 0
+    token_count: int = 0
+    created_at: float = 0.0
+
+
+class Summarizer(Protocol):
+    """摘要器：把一段消息历史压缩成摘要（通常 LLM 驱动）。"""
+
+    async def summarize(self, messages: Sequence[Message]) -> str: ...
+
+
+class SummaryBufferMemory(Protocol):
+    """「摘要 + 缓冲」记忆：更早历史压成摘要，最近几轮保留原文。
+
+    - load 返回「摘要 + 最近原文」拼成的消息列表（摘要放最前，缓存友好）
+    - compact 把最旧的消息折叠进摘要；触发时机由实现决定（如 token 阈值）
+    """
+
+    async def load(self, session_id: str) -> list[Message]: ...
+
+    async def save(self, session_id: str, messages: Sequence[Message]) -> None: ...
+
+    async def compact(self, session_id: str) -> None: ...

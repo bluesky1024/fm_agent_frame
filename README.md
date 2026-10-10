@@ -43,7 +43,7 @@
 | `llm` | `LLMProvider` 协议 + `OpenAICompatProvider` 实现 | ✅ 实现 |
 | `tools` | `Tool` 协议 + `ToolRegistry` + 内置工具 | ✅ 实现 |
 | `agent` | `Agent` 协议 + `ToolUseAgent`（ReAct 循环） | ✅ 实现 |
-| `memory` | 多层记忆接口（对话/画像/语义/情景）+ `ConversationMemory` | 🟡 接口全·极简实现 |
+| `memory` | 多层记忆 + 摘要压缩接口（对话/画像/语义/情景/摘要）+ `ConversationMemory` | 🟡 接口全·极简实现 |
 | `prompt` | 模板/多消息/版本库/示例选择接口 + `StringTemplatePrompt` | 🟡 接口全·极简实现 |
 | `obs` | `Tracer` 协议 + `setup_logging` 双路日志 | 🟡 接口全·极简实现 |
 | `retrieval` | RAG 流水线接口（Loader/Chunker/Embedder/VectorStore/Retriever/Reranker） | 🔵 接口全·零实现 |
@@ -54,6 +54,22 @@
 > ✅ 实现 / 🟡 接口完整 + 极简实现 / 🔵 接口完整、零实现
 >
 > 13 个模块的**接口均已定义完毕**：打开任意模块的 `base.py`，通过 Protocol 和 docstring 即可看清它对外提供的能力。主链路（`messages`/`llm`/`tools`/`agent`）已完整可跑，其余模块待逐个实现。
+
+## 待实现（TODO）
+
+主链路已完整，其余模块接口已铺全、待逐个实现。建议按下面顺序推进：
+
+| 模块 | 待实现 | 说明 |
+|---|---|---|
+| `memory` | `Summarizer` / `SummaryBufferMemory` | 摘要 + 滑动窗口：超阈值把旧历史压成摘要（省 token + 保缓存） |
+| `memory` | `ProfileMemory` / `SemanticMemory` / `EpisodicMemory` | 长期记忆：用户画像、语义事实、情景事件 |
+| `retrieval` | RAG 流水线 | `Loader`→`Chunker`→`Embedder`→`VectorStore`→`Retriever`→`Reranker` |
+| `prompt` | `ChatPromptTemplate` / `PromptLibrary` / `ExampleSelector` | 多消息模板、版本库、示例选择 |
+| `multi_agent` | `TaskDecomposer` / `AgentOrchestrator` | 拆任务 + 编排 |
+| `eval` | `Evaluator` / `EvalSuite` | 打分 + 跑批报告 |
+| `server` | `AgentService` / `SessionManager` | FastAPI 服务、多会话 |
+
+> 每个模块待实现的具体能力，见对应 `base.py` 里的 Protocol 与 docstring。
 
 ## 快速开始
 
