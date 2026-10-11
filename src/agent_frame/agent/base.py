@@ -40,8 +40,8 @@ class Agent(Protocol):
 class Observer(Protocol):
     """感知扩展点：每轮为 Agent 提供一条（通常带图的）观察消息。
 
-    实现方按需截屏/采集，返回一条 user Message；返回 None 的场景不需要，
-    由调用方决定是否装配观察者。
+    实现方按需截屏/采集，恒返回一条（通常带图的）user Message；
+    不需要观察的场景，由调用方不装配 observer 即可。
     """
 
     async def observe(self) -> Message: ...
