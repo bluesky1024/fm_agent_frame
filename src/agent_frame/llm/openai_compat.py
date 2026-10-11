@@ -92,7 +92,10 @@ def _to_openai_messages(messages: Sequence[Message]) -> list[dict]:
     for m in messages:
         d: dict = {"role": m.role}
         if m.content is not None:
-            d["content"] = m.content
+            if isinstance(m.content, str):
+                d["content"] = m.content
+            else:
+                d["content"] = [part.model_dump() for part in m.content]
         if m.tool_calls:
             d["tool_calls"] = [
                 {
