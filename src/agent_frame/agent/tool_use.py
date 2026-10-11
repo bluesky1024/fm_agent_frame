@@ -2,11 +2,15 @@
 
 这是整个框架的核心机制：LLM 不直接给出最终答案，
 而是先决定「要不要调用工具」，循环直到它给出纯文本回答为止。
+
+可选装配 observer（观察者）：在首轮之前、以及每批工具执行之后，
+各注入一条新的观察消息（通常是带图的 user 消息），
+从而支持「看 → 做 → 再看」的多模态计算机使用场景。
 """
 
 from __future__ import annotations
 
-from agent_frame.agent.base import AgentResult, AgentStep
+from agent_frame.agent.base import AgentResult, AgentStep, Observer
 from agent_frame.errors import AgentLoopError
 from agent_frame.llm.base import LLMProvider
 from agent_frame.memory.base import Memory
@@ -24,11 +28,13 @@ class ToolUseAgent:
         *,
         system_prompt: str | None = None,
         max_steps: int = 8,
+        observer: Observer | None = None,
     ) -> None:
         self._llm = llm
         self._tools = tools
         self._system_prompt = system_prompt
         self._max_steps = max_steps
+        self._observer = observer
 
     async def run(
         self,
@@ -48,6 +54,8 @@ class ToolUseAgent:
         if memory is not None:
             messages.extend(await memory.load(session_id))
         messages.append(Message.user(task))
+        if self._observer is not None:
+            messages.append(await self._observer.observe())
 
         tool_specs = self._tools.to_tool_specs()
         steps: list[AgentStep] = []
@@ -69,6 +77,8 @@ class ToolUseAgent:
                     )
                     called.append(tc.name)
                 steps.append(AgentStep(index=index, tool_calls=called))
+                if self._observer is not None:
+                    messages.append(await self._observer.observe())
                 continue
 
             # LLM 给出最终文本回答
