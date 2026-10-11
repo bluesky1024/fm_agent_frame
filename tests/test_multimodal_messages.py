@@ -1,3 +1,5 @@
+import base64
+
 from agent_frame.messages import Message
 
 
@@ -12,6 +14,8 @@ def test_user_with_image_builds_text_and_image_parts():
     assert text_part.text == "这是棋盘"
     assert image_part.type == "image_url"
     assert image_part.image_url["url"].startswith("data:image/png;base64,")
+    payload = image_part.image_url["url"].split(",", 1)[1]
+    assert base64.b64decode(payload) == png
     assert image_part.image_url["detail"] == "high"
 
 

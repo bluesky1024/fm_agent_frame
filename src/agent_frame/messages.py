@@ -47,7 +47,7 @@ class Message(BaseModel):
     """一条对话消息。"""
 
     role: Literal["system", "user", "assistant", "tool"]
-    content: str | list[TextPart | ImagePart] | None = None
+    content: str | list[ContentPart] | None = None
     tool_calls: list[ToolCall] | None = None
     tool_call_id: str | None = None
     name: str | None = None
