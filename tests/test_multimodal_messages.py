@@ -1,5 +1,6 @@
 import base64
 
+from agent_frame.llm.openai_compat import _to_openai_messages
 from agent_frame.messages import Message
 
 
@@ -22,9 +23,6 @@ def test_user_with_image_builds_text_and_image_parts():
 def test_plain_text_content_still_works():
     m = Message.user("hi")
     assert m.content == "hi"
-
-
-from agent_frame.llm.openai_compat import _to_openai_messages
 
 
 def test_to_openai_messages_emits_multimodal_parts():
