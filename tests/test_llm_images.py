@@ -69,11 +69,12 @@ def test_different_images_saved_separately_in_order(tmp_path):
     other = b"\x89PNG\r\n\x1a\nother"
     out = save_images_and_strip([_image_message(), _image_message(other)], pic_dir)
 
-    names = [p.name for p in pic_dir.glob("*.png")]
-    assert len(names) == 2
-    # 文件名按时间可排序，且顺序与出现顺序一致
-    assert sorted(names) == names
-    assert out[0]["content"][1]["image_url"]["url"] != out[1]["content"][1]["image_url"]["url"]
+    assert len(list(pic_dir.glob("*.png"))) == 2
+    first = out[0]["content"][1]["image_url"]["url"].rsplit("/", 1)[-1]
+    second = out[1]["content"][1]["image_url"]["url"].rsplit("/", 1)[-1]
+    assert first != second
+    # 时间前缀按字典序即按时间序；先写入的不晚于后者（同一微秒内允许相等）
+    assert first.split("_")[0] <= second.split("_")[0]
 
 
 def test_no_images_does_not_create_dir(tmp_path):

@@ -42,19 +42,24 @@
 ```
 MinesweeperAgent.run("赢下这局扫雷")
   │
-  ├─ messages = [system_prompt(扫雷专家), user(任务)]
-  ├─ messages += observer.observe()            # 首帧：截图+标注 → 带图 user 消息
+  ├─ messages = [system_prompt(扫雷专家), user(任务)]   # 永久历史：只有文本
+  ├─ frame = observer.observe()                        # 当前帧：截图+标注 → 带图 user 消息
   │
   └─ for step in range(max_steps):
-       result = llm.chat(messages, tools)       # deepseek-flash 原生看图
+       payload = messages + [frame]                     # ★ 请求 = 完整文本历史 + 一帧最新截图
+       result = llm.chat(payload, tools)                # deepseek-flash 原生看图
        ├─ 有 tool_calls:
        │    append assistant(tool_calls)
        │    for tc: 执行工具（click_cell/flag_cell/restart_game → 真操作鼠标）
-       │             append tool(result)
-       │    messages += observer.observe()       # ★ 动作后重新观察，注入新截图
+       │             append tool(result)                # 工具结果精简为 "ok"
+       │    frame = observer.observe()                  # ★ 替换当前帧，不 append 进历史
        │    continue
        └─ 纯文本: 记录并继续（游戏场景下模型基本一直走 tool_calls）
 ```
+
+**观察帧不进历史**：`frame` 作为「当前帧」随每次请求临时附加，不进永久 `messages`。
+否则历史里会堆满旧截图、每轮被重新发送（请求体随轮数膨胀）。发给 LLM 的永远是
+「完整文本历史 + 一帧最新截图」。历史里的文本进展（assistant 的 tool_calls、tool 结果）照常保留。
 
 `Observer` 协议（`agent/base.py`）：
 
@@ -105,7 +110,7 @@ class Message(BaseModel):
 ### 4.3 `agent/base.py` + `agent/tool_use.py` — 接入 Observer 钩子
 
 - `agent/base.py`：新增 `Observer` 协议。
-- `agent/tool_use.py`：构造函数新增 `observer: Observer | None = None`；`run` 中在**首帧前**与**每批工具执行后**各调用 `await observer.observe()` 并 append。
+- `agent/tool_use.py`：构造函数新增 `observer: Observer | None = None`；`run` 中在**首轮前**与**每批工具执行后**各调用 `await observer.observe()`，结果存入 `frame` 并在每次请求时临时附加（**不 append 进历史**）。
 
 ### 4.4 需要留意的实现细节
 
@@ -135,13 +140,28 @@ class Message(BaseModel):
 
 新增 `src/agent_frame/tools/desktop/`，三个工具通过构造器注入 `BoardGeometry` + `MouseController`（不同于无状态 builtin 工具）：
 
-| 工具 | 参数 | 行为 |
-|---|---|---|
-| `click_cell` | `row`, `col` | 左键点格心（翻开） |
-| `flag_cell` | `row`, `col` | 右键点格心（插旗） |
-| `restart_game` | 无 | 按配置点重开按钮 / 发按键；模型判定"这局结束"时调用 |
+| 工具 | 参数 | 行为 | 返回 |
+|---|---|---|---|
+| `click_cell` | `row`, `col` | 左键点格心（翻开） | `ok` |
+| `flag_cell` | `row`, `col` | Shift+左键点格心（插旗） | `ok` |
+| `restart_game` | 无 | 按配置点重开按钮 / 发按键；模型判定"这局结束"时调用 | `ok` |
 
 工具的 `name`/`description`/`parameters` 仍用类变量（满足 `Tool` 协议），依赖走实例构造器。
+
+- **工具返回精简为 `ok`**：不回报"翻了哪格 / 点了哪个坐标"。模型应依据**最新截图**判断结果，而不是读工具回报文本；这也避免了每轮大量工具结果撑大请求体。
+- **插旗用 Shift+左键**而非右键：macOS 上通过 pyautogui 合成的事件里，只有左键能被 tkinter 接收（实测右键/中键完全不触发事件）。`MouseController.shift_click` 负责按住 Shift 点击并保证释放。
+
+## 7. 系统提示词（扫雷专家人设）
+
+要点：
+
+- 说明"每轮你会收到一张最新棋盘截图，格子已带行列标尺"。
+- 工具用法（`click_cell` / `flag_cell` / `restart_game`）与行列号约定。
+- **一轮做满**：把当前所有能确定的动作一次性做完（确定的雷全部 `flag_cell`、确定安全的格子全部 `click_cell`），不要一轮只做一个动作，也不要留到下一轮。
+- 基本策略：数字 = 周围雷数；数字等于未开邻居数 → 全插旗；数字等于已插旗数 → 翻开其余；无法确定时挑**最可能安全**的格。
+- 只依据最新截图决策，不重复操作已翻开的格子。
+- **不输出推理/解释/思考过程**，直接调用工具（省 token、少一轮等待）。
+- 棋盘完成（胜利或踩雷）时调 `restart_game`。
 
 ## 7. 系统提示词（扫雷专家人设）
 
@@ -166,13 +186,12 @@ desktop = ["pyautogui", "pillow", "mss"]
 
 ### 8.2 配置
 
-`config/minesweeper.json`（示例脚本读取）：
+`config/minesweeper.json` 按平台分 section，`load_config` 运行时按 `sys.platform` 选对应 section 并平铺返回（`build_registry`/`build_agent` 收到的仍是平铺 config）：
 
 ```json
 {
-  "geometry": { "origin_x": 0, "origin_y": 0, "cell_w": 0, "cell_h": 0, "rows": 9, "cols": 9 },
-  "region":   { "left": 0, "top": 0, "width": 0, "height": 0 },
-  "restart":  { "type": "click", "x": 0, "y": 0 },
+  "windows": { "geometry": { "...": 0 }, "region": { "...": 0 }, "restart": { "type": "click", "x": 0, "y": 0 } },
+  "macos":   { "geometry": { "...": 0 }, "region": { "...": 0 }, "restart": { "type": "click", "x": 0, "y": 0 } },
   "image_detail": "high",
   "image_max_px": 1300,
   "max_steps": 300
@@ -180,9 +199,11 @@ desktop = ["pyautogui", "pillow", "mss"]
 ```
 
 - `restart` 支持 `{"type": "click", "x", "y"}` 或 `{"type": "key", "key": "f2"}`。
+- **跨平台坐标缩放**（mss 像素 ↔ pyautogui 逻辑点归一化）与平台 section 选择，详见 [跨平台适配设计](2026-10-12-minesweeper-cross-platform-design.md)。
 - 全局 `Settings.model` 默认仍为 `deepseek-chat`；运行扫雷时用 `MODEL=deepseek-flash`（或配置文件指定）。
-- **DPI**：Windows 高 DPI 缩放会让 pyautogui 坐标偏移；启动时调用 `SetProcessDpiAwareness` 对齐物理像素（必须）。
-- **校准**：实现阶段需要一张目标扫雷**截图**，据此填 `origin_x/origin_y/cell_w/cell_h/rows/cols`。校准小脚本为后续可选项，非本期。
+- **校准**：实现阶段需要一张目标扫雷**截图**，据此填 `origin_x/origin_y/cell_w/cell_h/rows/cols`。
+
+**自研目标程序**：`games/minesweeper.py` 提供免校准的 tkinter 扫雷（固定窗口、无边框、置顶；几何由 `board_config()` 自报），`examples/05_minesweeper_autoplay.py` 自动启动它并对局。
 
 ### 8.3 目录结构（新增/改动）
 
@@ -191,17 +212,21 @@ src/agent_frame/
   messages.py                    # 改：多模态 content
   llm/openai_compat.py           # 改：多模态透传
   agent/base.py                  # 改：+ Observer 协议
-  agent/tool_use.py              # 改：+ observer 钩子
+  agent/tool_use.py              # 改：+ observer 钩子（当前帧不进历史）
+  obs/llm_images.py              # 新：请求内联图片落盘 log/pic，日志只留引用
   desktop/                       # 新
-    __init__.py  geometry.py  screen.py  mouse.py  annotate.py  observer.py
+    __init__.py  geometry.py  screen.py  mouse.py  annotate.py  observer.py  minesweeper.py
   tools/desktop/                 # 新
     __init__.py  click_cell.py  flag_cell.py  restart_game.py
+games/minesweeper.py             # 新：免校准的自研 tkinter 扫雷（目标程序）
 config/minesweeper.json          # 新
-examples/04_minesweeper_agent.py # 新：组装并跑全自动对局
+examples/04_minesweeper_agent.py # 新：组装并跑全自动对局（外部扫雷）
+examples/05_minesweeper_autoplay.py # 新：自动启动 games/minesweeper.py 并对局
 tests/test_multimodal_messages.py
 tests/test_desktop_geometry.py
 tests/test_desktop_tools.py
 tests/test_observer_loop.py
+tests/test_minesweeper_game.py
 docs/superpowers/specs/2026-10-11-minesweeper-vision-agent-design.md
 ```
 
@@ -218,7 +243,7 @@ docs/superpowers/specs/2026-10-11-minesweeper-vision-agent-design.md
 - `test_multimodal_messages.py`：带图 `Message` 序列化 → `_to_openai_messages` 输出含 `image_url` data URL。
 - `test_desktop_geometry.py`：`cell_center` 数学正确。
 - `test_desktop_tools.py`：注入 fake `MouseController` 记录点击，断言点在各格心。
-- `test_observer_loop.py`：fake LLM + fake observer，断言 `observe` 在首轮前、每批工具后各调用一次，工具被执行。
+- `test_observer_loop.py`：fake LLM + fake observer，断言 `observe` 在首轮前、每批工具后各调用一次；每次请求只带**一帧最新截图**（旧帧不再出现，不随轮数累积）；工具被执行。
 - 全部不碰真屏幕、真 API；真实对局靠 `examples/04_minesweeper_agent.py` 手动跑。
 - 回归：现有 `tests/test_messages.py` 等在 `Message.content` 类型变宽后仍通过。
 

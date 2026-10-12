@@ -50,7 +50,7 @@ async def test_click_cell_clicks_cell_center():
     tool = ClickCellTool(_geo(), MouseController(backend=b))
     out = await tool.run(row=2, col=3)
     assert b.clicks == [(25, 15, "left")]
-    assert "2, 3" in out
+    assert out == "ok"
 
 
 async def test_flag_cell_shift_clicks_cell_center():
@@ -62,7 +62,7 @@ async def test_flag_cell_shift_clicks_cell_center():
         ("click", 5, 5, "left"),
         ("keyUp", "shift"),
     ]
-    assert "1, 1" in out
+    assert out == "ok"
 
 
 async def test_restart_game_by_click():
@@ -70,7 +70,7 @@ async def test_restart_game_by_click():
     tool = RestartGameTool(MouseController(backend=b), click_xy=(100, 100))
     out = await tool.run()
     assert b.clicks == [(100, 100, "left")]
-    assert "100" in out
+    assert out == "ok"
 
 
 async def test_restart_game_by_key():
@@ -78,7 +78,7 @@ async def test_restart_game_by_key():
     tool = RestartGameTool(MouseController(backend=b), key="f2")
     out = await tool.run()
     assert b.presses == ["f2"]
-    assert "f2" in out
+    assert out == "ok"
 
 
 def test_restart_game_requires_exactly_one_action():

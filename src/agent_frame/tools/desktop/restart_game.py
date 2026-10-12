@@ -33,6 +33,6 @@ class RestartGameTool:
         if self._click_xy is not None:
             x, y = self._click_xy
             self._mouse.click(x, y, button="left")
-            return f"已点击重开按钮 ({x}, {y})"
+            return "ok"
         self._mouse.press(self._key)  # type: ignore[arg-type]
-        return f"已按下重开按键 {self._key}"
+        return "ok"

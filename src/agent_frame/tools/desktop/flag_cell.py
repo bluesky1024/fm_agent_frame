@@ -30,4 +30,4 @@ class FlagCellTool:
     async def run(self, row: int, col: int) -> str:
         x, y = self._geometry.cell_center(row, col)
         self._mouse.shift_click(x, y)
-        return f"已给格子 ({row}, {col}) 插旗，点击坐标 ({x}, {y})"
+        return "ok"

@@ -30,4 +30,4 @@ class ClickCellTool:
     async def run(self, row: int, col: int) -> str:
         x, y = self._geometry.cell_center(row, col)
         self._mouse.click(x, y, button="left")
-        return f"已翻开格子 ({row}, {col})，点击坐标 ({x}, {y})"
+        return "ok"
