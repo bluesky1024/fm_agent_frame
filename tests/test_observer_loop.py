@@ -29,21 +29,36 @@ class OneToolThenTextLLM:
         return ChatResult(content="done")
 
 
-async def test_observer_injects_frame_before_first_and_after_tool_batch():
+async def test_only_latest_frame_is_sent_to_llm():
     llm = OneToolThenTextLLM()
     obs = RecordingObserver()
     agent = ToolUseAgent(llm, ToolRegistry([CalculatorTool()]), observer=obs)
 
     await agent.run("play")
 
-    # 首帧 + 一批工具执行后一帧
+    # 两个注入点各观察一次（首帧前 + 一批工具执行后）
     assert obs.count == 2
-    # 第一轮 chat 收到首帧
+    # 第一次请求：历史末尾是首帧
     assert llm.calls[0][-1].content == "frame-1"
-    # 第二轮 chat 同时含有两帧
-    second_contents = [m.content for m in llm.calls[1]]
-    assert "frame-1" in second_contents
-    assert "frame-2" in second_contents
+    # 第二次请求：末尾是最新帧；旧帧不再出现
+    second = [m.content for m in llm.calls[1]]
+    assert second[-1] == "frame-2"
+    assert "frame-1" not in second
+
+
+async def test_growth_history_keeps_text_but_no_old_frames():
+    llm = OneToolThenTextLLM()
+    obs = RecordingObserver()
+    agent = ToolUseAgent(llm, ToolRegistry([CalculatorTool()]), observer=obs)
+
+    await agent.run("play")
+
+    # 文本进展（assistant 工具调用 + 工具结果）保留在历史里
+    second_roles = [m.role for m in llm.calls[1]]
+    assert "tool" in second_roles
+    # 历史里最多只有一帧（当前帧），不随轮数累积
+    frame_count = sum(1 for m in llm.calls[1] if str(m.content).startswith("frame-"))
+    assert frame_count == 1
 
 
 async def test_no_observer_keeps_default_behavior():

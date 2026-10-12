@@ -4,8 +4,11 @@
 而是先决定「要不要调用工具」，循环直到它给出纯文本回答为止。
 
 可选装配 observer（观察者）：在首轮之前、以及每批工具执行之后，
-各注入一条新的观察消息（通常是带图的 user 消息），
-从而支持「看 → 做 → 再看」的多模态计算机使用场景。
+各取一帧最新观察（通常是带图的 user 消息），支持「看 → 做 → 再看」的多模态场景。
+
+观察帧**不进永久对话历史**，而是作为「当前帧」随每次请求临时附加：
+发给 LLM 的永远是「完整文本历史 + 一帧最新截图」。这样历史里的旧截图不会
+被反复重发，请求体不随轮数膨胀。
 """
 
 from __future__ import annotations
@@ -54,14 +57,18 @@ class ToolUseAgent:
         if memory is not None:
             messages.extend(await memory.load(session_id))
         messages.append(Message.user(task))
-        if self._observer is not None:
-            messages.append(await self._observer.observe())
+
+        # 观察帧不进历史：作为「当前帧」随每次请求临时附加
+        frame = (
+            await self._observer.observe() if self._observer is not None else None
+        )
 
         tool_specs = self._tools.to_tool_specs()
         steps: list[AgentStep] = []
 
         for index in range(self._max_steps):
-            result = await self._llm.chat(messages, tool_specs)
+            payload = messages + ([frame] if frame is not None else [])
+            result = await self._llm.chat(payload, tool_specs)
 
             # LLM 决定调用工具：逐个执行，把结果作为 tool 消息回填，进入下一轮
             if result.has_tool_calls and result.tool_calls:
@@ -78,7 +85,7 @@ class ToolUseAgent:
                     called.append(tc.name)
                 steps.append(AgentStep(index=index, tool_calls=called))
                 if self._observer is not None:
-                    messages.append(await self._observer.observe())
+                    frame = await self._observer.observe()  # 替换当前帧，不 append 进历史
                 continue
 
             # LLM 给出最终文本回答
