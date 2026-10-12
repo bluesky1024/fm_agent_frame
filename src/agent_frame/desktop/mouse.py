@@ -7,9 +7,13 @@ from typing import Protocol
 
 
 class InputBackend(Protocol):
-    """pyautogui 所需的最小接口；测试用 fake 实现。"""
+    """pyautogui 所需的最小接口；测试用 fake 实现。
 
-    def click(self, x: int, y: int, button: str) -> None: ...
+    注意 button 必须按关键字传递：pyautogui.click 的第 3 个位置参数是 clicks
+    （点击次数）而非 button，位置传参会把按钮名当成次数而报错。
+    """
+
+    def click(self, x: int, y: int, button: str = "left") -> None: ...
     def moveTo(self, x: int, y: int) -> None: ...
     def press(self, key: str) -> None: ...
 
@@ -39,7 +43,7 @@ class MouseController:
         self._backend = backend or _default_backend()
 
     def click(self, x: int, y: int, *, button: str = "left") -> None:
-        self._backend.click(x, y, button)
+        self._backend.click(x, y, button=button)
 
     def move_to(self, x: int, y: int) -> None:
         self._backend.moveTo(x, y)

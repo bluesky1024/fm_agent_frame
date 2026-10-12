@@ -2,12 +2,28 @@ from agent_frame.desktop.mouse import MouseController, enable_dpi_awareness
 
 
 class FakeBackend:
+    """签名模拟真实 pyautogui.click：第 3 个位置参数是 clicks，不是 button。
+
+    这样能抓到「把 button 按位置传参」的错误（真实 pyautogui 会把它当成 clicks）。
+    """
+
     def __init__(self) -> None:
         self.clicks = []
         self.moves = []
         self.presses = []
 
-    def click(self, x, y, button):
+    def click(
+        self,
+        x=None,
+        y=None,
+        clicks=1,
+        interval=0.0,
+        button="primary",
+        duration=0.0,
+        tween=None,
+        logScreenshot=None,
+        _pause=True,
+    ):
         self.clicks.append((x, y, button))
 
     def moveTo(self, x, y):

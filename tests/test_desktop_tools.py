@@ -6,11 +6,24 @@ from agent_frame.tools.desktop import ClickCellTool, FlagCellTool, RestartGameTo
 
 
 class FakeBackend:
+    """签名模拟真实 pyautogui.click（第 3 个位置参数是 clicks，不是 button）。"""
+
     def __init__(self) -> None:
         self.clicks = []
         self.presses = []
 
-    def click(self, x, y, button):
+    def click(
+        self,
+        x=None,
+        y=None,
+        clicks=1,
+        interval=0.0,
+        button="primary",
+        duration=0.0,
+        tween=None,
+        logScreenshot=None,
+        _pause=True,
+    ):
         self.clicks.append((x, y, button))
 
     def moveTo(self, x, y):
