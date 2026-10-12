@@ -3,5 +3,13 @@
 from agent_frame.desktop.annotate import GridAnnotator
 from agent_frame.desktop.geometry import BoardGeometry
 from agent_frame.desktop.mouse import MouseController, enable_dpi_awareness
+from agent_frame.desktop.screen import CaptureRegion, ScreenCapture
 
-__all__ = ["BoardGeometry", "GridAnnotator", "MouseController", "enable_dpi_awareness"]
+__all__ = [
+    "BoardGeometry",
+    "CaptureRegion",
+    "GridAnnotator",
+    "MouseController",
+    "ScreenCapture",
+    "enable_dpi_awareness",
+]
