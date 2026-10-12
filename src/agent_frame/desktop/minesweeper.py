@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from agent_frame.agent import ToolUseAgent
@@ -34,7 +35,28 @@ SYSTEM_PROMPT = """你是一个扫雷专家，正在通过截图观察一款扫�
 
 
 def load_config(path: str | Path) -> dict:
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+    raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    key = _platform_key(sys.platform)
+    if key not in raw:
+        raise ValueError(f"config 缺少平台 section: {key}")
+    section = raw[key]
+    merged = {
+        "geometry": section["geometry"],
+        "region": section["region"],
+        "restart": section["restart"],
+    }
+    for k in ("image_detail", "image_max_px", "max_steps"):
+        if k in raw:
+            merged[k] = raw[k]
+    return merged
+
+
+def _platform_key(platform: str) -> str:
+    if platform == "win32":
+        return "windows"
+    if platform == "darwin":
+        return "macos"
+    raise ValueError(f"不支持的平台: {platform}，仅支持 windows/macos")
 
 
 def build_registry(config: dict, mouse: MouseController) -> ToolRegistry:
