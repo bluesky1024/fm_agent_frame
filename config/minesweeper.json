@@ -1,0 +1,9 @@
+{
+  "_comment": "校准说明：origin_x/origin_y 是棋盘左上角格子外沿的屏幕绝对像素；cell_w/cell_h 是单格宽高；region 是截屏区域。restart 支持 type=click(x,y) 或 type=key(key)。用一张目标扫雷截图量出这些数值后替换。",
+  "geometry": { "origin_x": 380, "origin_y": 260, "cell_w": 24, "cell_h": 24, "rows": 9, "cols": 9 },
+  "region": { "left": 340, "top": 220, "width": 280, "height": 280 },
+  "restart": { "type": "click", "x": 470, "y": 230 },
+  "image_detail": "high",
+  "image_max_px": 1300,
+  "max_steps": 300
+}
