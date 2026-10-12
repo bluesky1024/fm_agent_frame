@@ -78,6 +78,10 @@ def _detect_scale() -> float:
 
 ### 4.2 配置分平台（`minesweeper.py` 的 `load_config`）
 
+> **后续变更（已移除）**：项目最终只保留自研扫雷（`games/minesweeper.py`，几何由 `board_config()` 自报、免校准），
+> 已删除 `config/minesweeper.json` 与 `load_config`/`_platform_key`。本节保留为当时的设计记录；
+> 跨平台中仍生效的是 §4.1 的坐标缩放归一化。
+
 `config/minesweeper.json` 结构改为：
 
 ```json

@@ -186,24 +186,15 @@ desktop = ["pyautogui", "pillow", "mss"]
 
 ### 8.2 配置
 
-`config/minesweeper.json` 按平台分 section，`load_config` 运行时按 `sys.platform` 选对应 section 并平铺返回（`build_registry`/`build_agent` 收到的仍是平铺 config）：
-
-```json
-{
-  "windows": { "geometry": { "...": 0 }, "region": { "...": 0 }, "restart": { "type": "click", "x": 0, "y": 0 } },
-  "macos":   { "geometry": { "...": 0 }, "region": { "...": 0 }, "restart": { "type": "click", "x": 0, "y": 0 } },
-  "image_detail": "high",
-  "image_max_px": 1300,
-  "max_steps": 300
-}
-```
+项目只保留自研目标程序（`games/minesweeper.py`），几何由 `board_config()` 自报、**免校准**；
+不再有 `config/minesweeper.json`。`build_agent(config, llm)` 接收一个平铺的 config dict
+（`geometry`/`region`/`restart`/`image_detail`/`image_max_px`/`max_steps`），由示例运行时构造。
 
 - `restart` 支持 `{"type": "click", "x", "y"}` 或 `{"type": "key", "key": "f2"}`。
-- **跨平台坐标缩放**（mss 像素 ↔ pyautogui 逻辑点归一化）与平台 section 选择，详见 [跨平台适配设计](2026-10-12-minesweeper-cross-platform-design.md)。
+- **跨平台坐标缩放**（mss 像素 ↔ pyautogui 逻辑点归一化）详见 [跨平台适配设计](2026-10-12-minesweeper-cross-platform-design.md)。
 - 全局 `Settings.model` 默认仍为 `deepseek-chat`；运行扫雷时用 `MODEL=deepseek-flash`（或配置文件指定）。
-- **校准**：实现阶段需要一张目标扫雷**截图**，据此填 `origin_x/origin_y/cell_w/cell_h/rows/cols`。
-
-**自研目标程序**：`games/minesweeper.py` 提供免校准的 tkinter 扫雷（固定窗口、无边框、置顶；几何由 `board_config()` 自报），`examples/04_minesweeper_autoplay.py` 自动启动它并对局。
+- **目标程序**：`games/minesweeper.py` 提供免校准的 tkinter 扫雷（固定窗口、无边框、置顶；几何由 `board_config()` 自报），`examples/04_minesweeper_autoplay.py` 自动启动它并对局。
+- **接入外部扫雷**（可选）：量出「棋盘左上角格子外沿的屏幕坐标、单格宽高、截屏区域」，自行构造同结构的 config dict 调 `build_agent`。
 
 ### 8.3 目录结构（新增/改动）
 
@@ -219,7 +210,6 @@ src/agent_frame/
   tools/desktop/                 # 新
     __init__.py  click_cell.py  flag_cell.py  restart_game.py
 games/minesweeper.py             # 新：免校准的自研 tkinter 扫雷（目标程序）
-config/minesweeper.json          # 新
 examples/04_minesweeper_autoplay.py  # 新：自动启动 games/minesweeper.py 并对局
 tests/test_multimodal_messages.py
 tests/test_desktop_geometry.py

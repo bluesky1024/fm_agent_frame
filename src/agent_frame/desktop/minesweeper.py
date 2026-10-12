@@ -1,10 +1,6 @@
-"""扫雷 Agent 的组装：系统提示词、配置加载、工具注册与 Agent 构建。"""
+"""扫雷 Agent 的组装：系统提示词、工具注册与 Agent 构建。"""
 
 from __future__ import annotations
-
-import json
-import sys
-from pathlib import Path
 
 from agent_frame.agent import ToolUseAgent
 from agent_frame.desktop.geometry import BoardGeometry
@@ -31,31 +27,6 @@ SYSTEM_PROMPT = """你是一个扫雷专家，通过截图观察棋盘并操作�
 - 直接调用工具，不要输出任何解释、推理或思考过程。
 - 无法确定时，选择最可能安全的格子翻开（不要乱猜高风险格）。
 - 本局结束时必须调用 restart_game 开新局，继续游戏。"""
-
-
-def load_config(path: str | Path) -> dict:
-    raw = json.loads(Path(path).read_text(encoding="utf-8"))
-    key = _platform_key(sys.platform)
-    if key not in raw:
-        raise ValueError(f"config 缺少平台 section: {key}")
-    section = raw[key]
-    merged = {
-        "geometry": section["geometry"],
-        "region": section["region"],
-        "restart": section["restart"],
-    }
-    for k in ("image_detail", "image_max_px", "max_steps"):
-        if k in raw:
-            merged[k] = raw[k]
-    return merged
-
-
-def _platform_key(platform: str) -> str:
-    if platform == "win32":
-        return "windows"
-    if platform == "darwin":
-        return "macos"
-    raise ValueError(f"不支持的平台: {platform}，仅支持 windows/macos")
 
 
 def build_registry(config: dict, mouse: MouseController) -> ToolRegistry:

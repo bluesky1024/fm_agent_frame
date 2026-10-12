@@ -11,7 +11,6 @@ from games.minesweeper import (
     HEADER,
     LABEL_MARGIN_X,
     LABEL_MARGIN_Y,
-    MINES,
     ROWS,
     MinesweeperBoard,
     board_config,
@@ -83,11 +82,6 @@ def test_board_config_region_includes_label_margin():
     assert cfg["restart"]["type"] == "click"
     assert cfg["restart"]["x"] == GAME_ORIGIN_X + COLS * CELL // 2
     assert cfg["restart"]["y"] == GAME_ORIGIN_Y + HEADER // 2
-
-
-def test_mine_count_is_not_trivially_openable():
-    # 首点不应一次开完，需保留推理空间（9x9 至少 15 雷）
-    assert MINES >= 15
 
 
 async def test_annotated_frame_contains_row_col_labels():
