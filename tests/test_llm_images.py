@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import re
 
 from agent_frame.obs.llm_images import save_images_and_strip
 
@@ -20,20 +21,27 @@ def _image_message(png: bytes = PNG) -> dict:
     }
 
 
-def _expected_name(png: bytes = PNG) -> str:
-    return hashlib.sha1(png).hexdigest()[:12] + ".png"
+def _suffix(png: bytes = PNG) -> str:
+    return "_" + hashlib.sha1(png).hexdigest()[:12] + ".png"
 
 
 def test_saves_png_and_replaces_url(tmp_path):
     pic_dir = tmp_path / "pic"
     out = save_images_and_strip([_image_message()], pic_dir)
 
-    saved = pic_dir / _expected_name()
-    assert saved.exists()
-    assert saved.read_bytes() == PNG
-    assert out[0]["content"][1]["image_url"]["url"] == str(saved)
+    files = list(pic_dir.glob(f"*{_suffix()}"))
+    assert len(files) == 1
+    assert files[0].read_bytes() == PNG
+    assert out[0]["content"][1]["image_url"]["url"] == str(files[0])
     # detail 保持不变
     assert out[0]["content"][1]["image_url"]["detail"] == "high"
+
+
+def test_filename_has_sortable_time_prefix(tmp_path):
+    pic_dir = tmp_path / "pic"
+    save_images_and_strip([_image_message()], pic_dir)
+    name = next(pic_dir.glob("*.png")).name
+    assert re.fullmatch(r"\d{8}-\d{6}-\d{6}_[0-9a-f]{12}\.png", name)
 
 
 def test_text_parts_and_string_content_unchanged(tmp_path):
@@ -48,21 +56,23 @@ def test_text_parts_and_string_content_unchanged(tmp_path):
 
 def test_same_image_deduped_to_one_file(tmp_path):
     pic_dir = tmp_path / "pic"
-    out = save_images_and_strip(
-        [_image_message(), _image_message()], pic_dir
+    out = save_images_and_strip([_image_message(), _image_message()], pic_dir)
+    assert len(list(pic_dir.glob("*.png"))) == 1
+    assert (
+        out[0]["content"][1]["image_url"]["url"]
+        == out[1]["content"][1]["image_url"]["url"]
     )
-    files = list(pic_dir.glob("*.png"))
-    assert len(files) == 1
-    assert out[0]["content"][1]["image_url"]["url"] == out[1]["content"][1]["image_url"]["url"]
 
 
-def test_different_images_saved_separately(tmp_path):
+def test_different_images_saved_separately_in_order(tmp_path):
     pic_dir = tmp_path / "pic"
     other = b"\x89PNG\r\n\x1a\nother"
-    out = save_images_and_strip(
-        [_image_message(), _image_message(other)], pic_dir
-    )
-    assert len(list(pic_dir.glob("*.png"))) == 2
+    out = save_images_and_strip([_image_message(), _image_message(other)], pic_dir)
+
+    names = [p.name for p in pic_dir.glob("*.png")]
+    assert len(names) == 2
+    # 文件名按时间可排序，且顺序与出现顺序一致
+    assert sorted(names) == names
     assert out[0]["content"][1]["image_url"]["url"] != out[1]["content"][1]["image_url"]["url"]
 
 
