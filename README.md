@@ -92,16 +92,23 @@ python examples/03_interactive.py
 # 5. 扫雷视觉 Agent（多模态计算机使用，需先校准 config/minesweeper.json）
 #    Windows / macOS；安装桌面依赖：pip install -e ".[desktop]"
 MODEL=deepseek-flash python examples/04_minesweeper_agent.py
+
+# 6. 自研扫雷自动对局（无需校准，自动启动 games/minesweeper.py 并操作）
+MODEL=deepseek-flash python examples/05_minesweeper_autoplay.py
 ```
 
 ### 扫雷视觉 Agent 校准（Windows / macOS）
 
-目标程序统一为网页版扫雷（两个平台开同一网页）。首次运行前：
+目标程序有两种选择：
 
+**网页版扫雷**（示例 4，需校准）：两个平台开同一网页。首次运行前：
 1. 打开网页版扫雷，固定浏览器窗口位置与大小。
 2. 截一张棋盘截图，量出：棋盘左上角格子的屏幕坐标、单格宽高、截屏区域。
 3. 把数值填入 `config/minesweeper.json` 的 `windows` 或 `macos` 对应 section。
-4. macOS 需在「系统设置 → 隐私与安全性 → 辅助功能」授权终端/Python 控制鼠标。
+
+**自研 tkinter 扫雷**（示例 5，免校准）：`games/minesweeper.py` 是自带的固定窗口扫雷，`examples/05_minesweeper_autoplay.py` 自动启动并操作，坐标由游戏自报、无需校准。
+
+两种方式在 macOS 上都需在「系统设置 → 隐私与安全性 → 辅助功能」授权终端/Python 控制鼠标。
 
 ## 运行测试
 
