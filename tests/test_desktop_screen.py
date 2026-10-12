@@ -38,3 +38,20 @@ def test_grab_resizes_when_scale_is_not_one():
     assert seen["region"].height == 80
     assert seen["region"].left == 0
     assert seen["region"].top == 0
+
+
+def test_grab_derives_scaled_width_from_edges():
+    region = CaptureRegion(left=0, top=0, width=13, height=13)
+    seen = {}
+
+    def fake_grabber(r):
+        seen["region"] = r
+        return Image.new("RGB", (r.width, r.height), "white")
+
+    cap = ScreenCapture(region, grabber=fake_grabber, scale=1.5)
+    img = cap.grab()
+
+    # 13 * 1.5 = 19.5；独立 int() 截断得 19 会丢右边界，正确是 round(19.5)=20
+    assert seen["region"].width == 20
+    assert seen["region"].height == 20
+    assert img.size == (13, 13)

@@ -61,11 +61,15 @@ class ScreenCapture:
             self._scale = scale
         if scale == 1.0:
             return self._grab(self._region)
+        left = round(self._region.left * scale)
+        top = round(self._region.top * scale)
+        right = round((self._region.left + self._region.width) * scale)
+        bottom = round((self._region.top + self._region.height) * scale)
         mss_region = CaptureRegion(
-            left=int(self._region.left * scale),
-            top=int(self._region.top * scale),
-            width=int(self._region.width * scale),
-            height=int(self._region.height * scale),
+            left=left,
+            top=top,
+            width=right - left,
+            height=bottom - top,
         )
         img = self._grab(mss_region)
         return img.resize((self._region.width, self._region.height))
