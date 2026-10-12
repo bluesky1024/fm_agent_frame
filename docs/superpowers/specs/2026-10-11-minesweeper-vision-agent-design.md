@@ -203,7 +203,7 @@ desktop = ["pyautogui", "pillow", "mss"]
 - 全局 `Settings.model` 默认仍为 `deepseek-chat`；运行扫雷时用 `MODEL=deepseek-flash`（或配置文件指定）。
 - **校准**：实现阶段需要一张目标扫雷**截图**，据此填 `origin_x/origin_y/cell_w/cell_h/rows/cols`。
 
-**自研目标程序**：`games/minesweeper.py` 提供免校准的 tkinter 扫雷（固定窗口、无边框、置顶；几何由 `board_config()` 自报），`examples/05_minesweeper_autoplay.py` 自动启动它并对局。
+**自研目标程序**：`games/minesweeper.py` 提供免校准的 tkinter 扫雷（固定窗口、无边框、置顶；几何由 `board_config()` 自报），`examples/04_minesweeper_autoplay.py` 自动启动它并对局。
 
 ### 8.3 目录结构（新增/改动）
 
@@ -220,8 +220,7 @@ src/agent_frame/
     __init__.py  click_cell.py  flag_cell.py  restart_game.py
 games/minesweeper.py             # 新：免校准的自研 tkinter 扫雷（目标程序）
 config/minesweeper.json          # 新
-examples/04_minesweeper_agent.py # 新：组装并跑全自动对局（外部扫雷）
-examples/05_minesweeper_autoplay.py # 新：自动启动 games/minesweeper.py 并对局
+examples/04_minesweeper_autoplay.py  # 新：自动启动 games/minesweeper.py 并对局
 tests/test_multimodal_messages.py
 tests/test_desktop_geometry.py
 tests/test_desktop_tools.py
@@ -244,12 +243,12 @@ docs/superpowers/specs/2026-10-11-minesweeper-vision-agent-design.md
 - `test_desktop_geometry.py`：`cell_center` 数学正确。
 - `test_desktop_tools.py`：注入 fake `MouseController` 记录点击，断言点在各格心。
 - `test_observer_loop.py`：fake LLM + fake observer，断言 `observe` 在首轮前、每批工具后各调用一次；每次请求只带**一帧最新截图**（旧帧不再出现，不随轮数累积）；工具被执行。
-- 全部不碰真屏幕、真 API；真实对局靠 `examples/04_minesweeper_agent.py` 手动跑。
+- 全部不碰真屏幕、真 API；真实对局靠 `examples/04_minesweeper_autoplay.py` 手动跑。
 - 回归：现有 `tests/test_messages.py` 等在 `Message.content` 类型变宽后仍通过。
 
 ## 11. 验收标准
 
 1. 纯文本 agent 行为不变（`observer=None` 时），现有测试全绿。
-2. `MODEL=deepseek-flash python examples/04_minesweeper_agent.py` 能：截屏 → 标注 → 模型看图 → 调 `click_cell` 真正点击棋盘 → 动作后再次截屏，形成闭环。
+2. `MODEL=deepseek-flash python examples/04_minesweeper_autoplay.py` 能：截屏 → 标注 → 模型看图 → 调 `click_cell` 真正点击棋盘 → 动作后再次截屏，形成闭环。
 3. 模型能在胜利/踩雷后调 `restart_game` 重开，示例层能用 `--games N` 截断。
 4. `pytest` 全绿，且不依赖真实屏幕/API。

@@ -125,7 +125,7 @@ def _detect_scale() -> float:
 | `tests/test_minesweeper_build.py` | 改：新增 `load_config` 平台选择测试 |
 | `README.md` | 改：跨平台用法 + 校准说明 |
 
-**不改动：** `mouse.py`（`enable_dpi_awareness` 保留，与缩放抽象配合）、`geometry.py`、`annotate.py`、`observer.py`、三个工具、`messages.py`、`openai_compat.py`、`agent/*`、`examples/04_minesweeper_agent.py`（`load_config` 已封装平台选择，示例无需改）。
+**不改动：** `mouse.py`（`enable_dpi_awareness` 保留，与缩放抽象配合）、`geometry.py`、`annotate.py`、`observer.py`、三个工具、`messages.py`、`openai_compat.py`、`agent/*`。
 
 ## 6. 测试策略
 
@@ -139,5 +139,5 @@ def _detect_scale() -> float:
 ## 7. 验收标准
 
 1. `python -m pytest -v` 全绿，不依赖真实屏幕/API。
-2. Windows 与 macOS 各用网页扫雷，`config/minesweeper.json` 分平台校准后，`MODEL=deepseek-flash python examples/04_minesweeper_agent.py` 能截屏 → 标注 → 模型看图 → 点击棋盘 → 再截屏，形成闭环。
+2. Windows 与 macOS 上，`MODEL=deepseek-flash python examples/04_minesweeper_autoplay.py`（自研扫雷，免校准）能截屏 → 标注 → 模型看图 → 点击棋盘 → 再截屏，形成闭环。
 3. 坐标对齐不依赖「mss 恰好返回逻辑点」的隐含假设：`scale != 1` 的环境下（如 Windows 未 DPI-aware 的物理像素截图，或 mss 返回物理像素的 Retina 屏）截图仍与点击坐标一致。
