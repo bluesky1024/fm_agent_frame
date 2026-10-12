@@ -11,7 +11,7 @@ from agent_frame.desktop.mouse import MouseController
 class FlagCellTool:
     name: ClassVar[str] = "flag_cell"
     description: ClassVar[str] = (
-        "给指定的格子插旗（右键单击该格中心），表示此处是雷。"
+        "给指定的格子插旗（标记为此处是雷）。"
         "row/col 为 1 基行列号，与棋盘截图上标注的行列号一致。"
     )
     parameters: ClassVar[dict[str, Any]] = {
@@ -29,5 +29,5 @@ class FlagCellTool:
 
     async def run(self, row: int, col: int) -> str:
         x, y = self._geometry.cell_center(row, col)
-        self._mouse.click(x, y, button="right")
+        self._mouse.shift_click(x, y)
         return f"已给格子 ({row}, {col}) 插旗，点击坐标 ({x}, {y})"

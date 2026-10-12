@@ -16,6 +16,8 @@ class InputBackend(Protocol):
     def click(self, x: int, y: int, button: str = "left") -> None: ...
     def moveTo(self, x: int, y: int) -> None: ...
     def press(self, key: str) -> None: ...
+    def keyDown(self, key: str) -> None: ...
+    def keyUp(self, key: str) -> None: ...
 
 
 def enable_dpi_awareness() -> None:
@@ -50,6 +52,18 @@ class MouseController:
 
     def press(self, key: str) -> None:
         self._backend.press(key)
+
+    def shift_click(self, x: int, y: int, *, button: str = "left") -> None:
+        """按住 Shift 再点击。
+
+        macOS 上 tkinter 收不到合成右键事件，因此「插旗」用 Shift+左键代替；
+        点击抛异常时也保证释放 Shift，避免按键卡住。
+        """
+        self._backend.keyDown("shift")
+        try:
+            self._backend.click(x, y, button=button)
+        finally:
+            self._backend.keyUp("shift")
 
 
 def _default_backend() -> InputBackend:

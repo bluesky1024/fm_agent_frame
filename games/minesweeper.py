@@ -13,9 +13,12 @@ CELL = 32
 HEADER = 40
 ROWS = 9
 COLS = 9
-MINES = 10
+MINES = 18
 GAME_ORIGIN_X = 200
 GAME_ORIGIN_Y = 200
+# 截屏区域在棋盘左/上留出的边距，供标注行列标尺（否则标尺会被裁到图外）
+LABEL_MARGIN_X = 24
+LABEL_MARGIN_Y = 20
 
 
 class MinesweeperBoard:
@@ -142,7 +145,9 @@ class MinesweeperGUI:
         self.canvas = tk.Canvas(root, width=self.width, height=self.height, highlightthickness=0)
         self.canvas.pack()
         self.canvas.bind("<Button-1>", self._on_left)
-        self.canvas.bind("<Button-3>", self._on_right)
+        # 插旗：Shift+左键（macOS 上 tkinter 收不到右键）；同时保留右键以兼容 Windows
+        self.canvas.bind("<Shift-Button-1>", self._on_flag)
+        self.canvas.bind("<Button-3>", self._on_flag)
         self._draw()
 
     def _cell_rect(self, row: int, col: int) -> tuple[int, int, int, int]:
@@ -188,7 +193,7 @@ class MinesweeperGUI:
             self.board.reveal(row, col)
             self._draw()
 
-    def _on_right(self, event: tk.Event) -> None:
+    def _on_flag(self, event: tk.Event) -> None:
         col = event.x // CELL
         row = (event.y - HEADER) // CELL
         if 0 <= row < ROWS and 0 <= col < COLS:
@@ -217,7 +222,12 @@ def board_config() -> dict:
             "rows": ROWS,
             "cols": COLS,
         },
-        "region": {"left": ox, "top": oy, "width": COLS * CELL, "height": ROWS * CELL},
+        "region": {
+            "left": ox - LABEL_MARGIN_X,
+            "top": oy - LABEL_MARGIN_Y,
+            "width": COLS * CELL + LABEL_MARGIN_X,
+            "height": ROWS * CELL + LABEL_MARGIN_Y,
+        },
         "restart": {
             "type": "click",
             "x": GAME_ORIGIN_X + COLS * CELL // 2,

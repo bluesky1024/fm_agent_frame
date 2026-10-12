@@ -11,6 +11,7 @@ class FakeBackend:
     def __init__(self) -> None:
         self.clicks = []
         self.presses = []
+        self.events = []
 
     def click(
         self,
@@ -25,12 +26,19 @@ class FakeBackend:
         _pause=True,
     ):
         self.clicks.append((x, y, button))
+        self.events.append(("click", x, y, button))
 
     def moveTo(self, x, y):
         pass
 
     def press(self, key):
         self.presses.append(key)
+
+    def keyDown(self, key):
+        self.events.append(("keyDown", key))
+
+    def keyUp(self, key):
+        self.events.append(("keyUp", key))
 
 
 def _geo() -> BoardGeometry:
@@ -45,11 +53,15 @@ async def test_click_cell_clicks_cell_center():
     assert "2, 3" in out
 
 
-async def test_flag_cell_right_clicks_cell_center():
+async def test_flag_cell_shift_clicks_cell_center():
     b = FakeBackend()
     tool = FlagCellTool(_geo(), MouseController(backend=b))
     out = await tool.run(row=1, col=1)
-    assert b.clicks == [(5, 5, "right")]
+    assert b.events == [
+        ("keyDown", "shift"),
+        ("click", 5, 5, "left"),
+        ("keyUp", "shift"),
+    ]
     assert "1, 1" in out
 
 

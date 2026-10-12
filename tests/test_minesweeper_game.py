@@ -1,9 +1,17 @@
+import base64
+import io
+
+from PIL import Image
+
 from games.minesweeper import (
     CELL,
     COLS,
     GAME_ORIGIN_X,
     GAME_ORIGIN_Y,
     HEADER,
+    LABEL_MARGIN_X,
+    LABEL_MARGIN_Y,
+    MINES,
     ROWS,
     MinesweeperBoard,
     board_config,
@@ -64,13 +72,42 @@ def test_board_config_geometry():
     assert cfg["geometry"]["cols"] == COLS
 
 
-def test_board_config_region_and_restart():
+def test_board_config_region_includes_label_margin():
     cfg = board_config()
     ox, oy = GAME_ORIGIN_X, GAME_ORIGIN_Y + HEADER
-    assert cfg["region"]["left"] == ox
-    assert cfg["region"]["top"] == oy
-    assert cfg["region"]["width"] == COLS * CELL
-    assert cfg["region"]["height"] == ROWS * CELL
+    # 区域要向左/上各留出边距，行列标尺才画得进图内
+    assert cfg["region"]["left"] == ox - LABEL_MARGIN_X
+    assert cfg["region"]["top"] == oy - LABEL_MARGIN_Y
+    assert cfg["region"]["width"] == COLS * CELL + LABEL_MARGIN_X
+    assert cfg["region"]["height"] == ROWS * CELL + LABEL_MARGIN_Y
     assert cfg["restart"]["type"] == "click"
     assert cfg["restart"]["x"] == GAME_ORIGIN_X + COLS * CELL // 2
     assert cfg["restart"]["y"] == GAME_ORIGIN_Y + HEADER // 2
+
+
+def test_mine_count_is_not_trivially_openable():
+    # 首点不应一次开完，需保留推理空间（9x9 至少 15 雷）
+    assert MINES >= 15
+
+
+async def test_annotated_frame_contains_row_col_labels():
+    from agent_frame.desktop.geometry import BoardGeometry
+    from agent_frame.desktop.observer import BoardObserver
+    from agent_frame.desktop.screen import CaptureRegion, ScreenCapture
+
+    cfg = board_config()
+    geo = BoardGeometry(**cfg["geometry"])
+    cap = ScreenCapture(
+        CaptureRegion(**cfg["region"]),
+        grabber=lambda r: Image.new("RGB", (r.width, r.height), "white"),
+    )
+    msg = await BoardObserver(cap, geo).observe()
+
+    data_url = msg.content[1].image_url["url"]
+    png = base64.b64decode(data_url.split(",", 1)[1])
+    img = Image.open(io.BytesIO(png)).convert("RGB")
+    # 蓝色行列标尺应出现在图内（抗锯齿，用偏蓝判据）
+    bluish = sum(
+        1 for (r, g, b) in img.getdata() if b > 80 and b > r + 30 and b > g + 30
+    )
+    assert bluish > 0
