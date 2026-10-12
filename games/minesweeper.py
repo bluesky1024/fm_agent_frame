@@ -13,7 +13,7 @@ CELL = 32
 HEADER = 40
 ROWS = 9
 COLS = 9
-MINES = 18
+MINES = 5
 GAME_ORIGIN_X = 200
 GAME_ORIGIN_Y = 200
 # 截屏区域在棋盘左/上留出的边距，供标注行列标尺（否则标尺会被裁到图外）
