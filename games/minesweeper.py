@@ -138,6 +138,7 @@ class MinesweeperGUI:
         self.height = HEADER + ROWS * CELL
         root.overrideredirect(True)  # 无边框，窗口内容从 (origin_x, origin_y) 精确开始
         root.geometry(f"{self.width}x{self.height}+{origin_x}+{origin_y}")
+        root.attributes("-topmost", True)  # 始终置顶，避免被终端窗口盖住导致点击落空
         self.canvas = tk.Canvas(root, width=self.width, height=self.height, highlightthickness=0)
         self.canvas.pack()
         self.canvas.bind("<Button-1>", self._on_left)
