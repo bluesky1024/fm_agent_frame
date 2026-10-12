@@ -50,6 +50,7 @@
 | `multi_agent` | 编排接口（AgentSpec/SubTask/TaskDecomposer/Orchestrator） | 🔵 接口全·零实现 |
 | `eval` | 评测接口（EvalCase/Evaluator/EvalSuite/EvalReport） | 🔵 接口全·零实现 |
 | `server` | HTTP 服务接口（ChatRequest/AgentService/SessionManager） | 🔵 接口全·零实现 |
+| `desktop` | 桌面自动化：截屏/鼠标控制/棋盘几何/网格标注 + 扫雷工具集 | ✅ 实现 |
 
 > ✅ 实现 / 🟡 接口完整 + 极简实现 / 🔵 接口完整、零实现
 >
@@ -87,6 +88,10 @@ python examples/02_tool_agent.py
 
 # 4. 交互式多轮对话（输入 exit 退出）
 python examples/03_interactive.py
+
+# 5. 扫雷视觉 Agent（多模态计算机使用，需先校准 config/minesweeper.json）
+#    Windows；安装桌面依赖：pip install -e ".[desktop]"
+MODEL=deepseek-flash python examples/04_minesweeper_agent.py
 ```
 
 ## 运行测试
