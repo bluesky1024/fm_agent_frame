@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Sequence
+from pathlib import Path
 
 from openai import AsyncOpenAI
 
@@ -17,6 +18,7 @@ from agent_frame.config import Settings, get_settings
 from agent_frame.errors import LLMError
 from agent_frame.llm.base import ChatResult, ToolSpec
 from agent_frame.messages import Message, ToolCall
+from agent_frame.obs.llm_images import save_images_and_strip
 
 logger = logging.getLogger("agent_frame.llm")
 
@@ -48,12 +50,13 @@ class OpenAICompatProvider:
             else None
         )
         openai_messages = _to_openai_messages(messages)
+        pic_dir = Path(self._settings.log_dir) / "pic"
         logger.debug(
             "LLM 请求 | %s",
             json.dumps(
                 {
                     "model": self._settings.model,
-                    "messages": openai_messages,
+                    "messages": save_images_and_strip(openai_messages, pic_dir),
                     "tools": payload_tools,
                 },
                 ensure_ascii=False,

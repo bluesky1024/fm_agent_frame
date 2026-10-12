@@ -122,10 +122,10 @@ pytest
 
 日志分两路输出（目录由 `LOG_DIR` 配置，默认 `log`）：
 
-- **主日志**：控制台（可用 `LOG_CONSOLE=false` 关闭）+ `log/agent.log`，记录框架运行日志（不含 LLM 交互）
-- **LLM 交互日志**：`log/llm.log`，只记录与 LLM 的**请求**（messages + tools）和**回包**的原始 JSON
+- **主日志**：控制台（可用 `LOG_CONSOLE=false` 关闭）+ `log/agent.log`，记录框架运行日志（不含 LLM 交互），级别由 `LOG_LEVEL` 控制
+- **LLM 交互日志**：`log/llm.log`，**始终全量记录**与 LLM 的**请求**（messages + tools）和**回包**的原始 JSON，不受 `LOG_LEVEL` 影响；请求里的内联截图会落盘到 `log/pic/*.png`，日志中只留文件路径引用
 
-级别通过 `LOG_LEVEL` 环境变量（或 `.env`）配置，设成 `DEBUG` 会打印 LLM 请求/回包：
+主日志级别通过 `LOG_LEVEL` 环境变量（或 `.env`）配置：
 
 ```bash
 LOG_LEVEL=DEBUG python examples/02_tool_agent.py

@@ -47,3 +47,21 @@ async def test_provider_emits_debug_logs(caplog):
     messages = [r.message for r in caplog.records]
     assert any("LLM 请求" in m for m in messages)
     assert any("LLM 响应" in m for m in messages)
+
+
+async def test_request_log_saves_image_to_pic_dir(tmp_path, caplog):
+    caplog.set_level(logging.DEBUG)
+
+    png = b"\x89PNG\r\n\x1a\nimage-bytes"
+    settings = Settings(deepseek_api_key="test-key", log_dir=str(tmp_path / "log"))
+    provider = OpenAICompatProvider(settings)
+    provider._client = _FakeClient()  # 替换真实 client，避免联网
+
+    await provider.chat([Message.user_with_image("棋盘", png)])
+
+    pic_dir = tmp_path / "log" / "pic"
+    assert len(list(pic_dir.glob("*.png"))) == 1
+
+    logged = "\n".join(r.message for r in caplog.records)
+    assert "/pic/" in logged  # 日志里是文件路径引用
+    assert "data:image/png;base64" not in logged  # base64 不再进日志

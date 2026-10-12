@@ -55,6 +55,18 @@ def test_setup_logging_separates_llm_logs(tmp_path, restore_logging):
     assert "LLM 专用内容" not in agent_content
 
 
+def test_llm_log_always_records_debug_regardless_of_level(tmp_path, restore_logging):
+    # LOG_LEVEL=INFO 时，LLM 专用日志仍应完整记录（不受级别门控）
+    setup_logging(log_level="INFO", log_dir=str(tmp_path / "log"), console=False)
+
+    logging.getLogger("agent_frame.llm").debug("LLM 始终记录")
+    for handler in logging.getLogger("agent_frame.llm").handlers:
+        handler.flush()
+
+    llm_content = (tmp_path / "log" / "llm.log").read_text(encoding="utf-8")
+    assert "LLM 始终记录" in llm_content
+
+
 def test_setup_logging_can_disable_console(tmp_path, restore_logging):
     setup_logging(log_level="INFO", log_dir=str(tmp_path / "log"), console=False)
 
