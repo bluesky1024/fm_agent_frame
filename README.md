@@ -98,7 +98,8 @@ MODEL=deepseek-flash python examples/04_minesweeper_autoplay.py
 ### 扫雷视觉 Agent 说明（Windows / macOS）
 
 - **目标程序**：`games/minesweeper.py` —— 自带的 tkinter 扫雷（固定窗口、无边框、置顶），几何由 `board_config()` 自报，**免校准**；`examples/04_minesweeper_autoplay.py` 自动启动它并对局。
-- **macOS** 需在「系统设置 → 隐私与安全性 → 辅助功能」授权终端/Python 控制鼠标。
+- macOS 需在「系统设置 → 隐私与安全性 → 辅助功能」授权终端/Python 控制鼠标。
+- 完整调用流程（组件图 / 主循环 / 时序，含 mermaid 图）见 [docs/minesweeper-agent-flow.md](docs/minesweeper-agent-flow.md)。
 
 ## 运行测试
 
