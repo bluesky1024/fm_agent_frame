@@ -1,12 +1,23 @@
-"""扫雷 Agent 的组装：系统提示词、工具注册与 Agent 构建。"""
+"""扫雷 Agent 的组装：系统提示词、工具注册与运行时 spec。
+
+观察帧通过 ContextProvider 每次装配时实时获取：历史里只保留文本进展，
+不发旧截图（与旧 Observer 的「当前帧」语义一致）。
+"""
 
 from __future__ import annotations
 
-from agent_frame.agent import ToolUseAgent
+from dataclasses import dataclass
+from typing import Any
+
+from agent_frame.context import ContextProvider, ContextRequest
+from agent_frame.core.messages import Message
+from agent_frame.core.types import AgentResult
 from agent_frame.desktop.geometry import BoardGeometry
 from agent_frame.desktop.mouse import MouseController
 from agent_frame.desktop.observer import BoardObserver
 from agent_frame.desktop.screen import CaptureRegion, ScreenCapture
+from agent_frame.interfaces.session import InMemorySession
+from agent_frame.runtime import AgentRuntime, AgentSpec
 from agent_frame.tools import ToolRegistry
 from agent_frame.tools.desktop import ClickCellTool, FlagCellTool, RestartGameTool
 
@@ -29,7 +40,29 @@ SYSTEM_PROMPT = """你是一个扫雷专家，通过截图观察棋盘并操作�
 - 本局结束时必须调用 restart_game 开新局，继续游戏。"""
 
 
-def build_registry(config: dict, mouse: MouseController) -> ToolRegistry:
+class ObserverContextProvider:
+    """每轮装配时抓一帧最新观察，作为请求视图的一部分（不写回历史）。"""
+
+    def __init__(self, observer: BoardObserver) -> None:
+        self._observer = observer
+
+    async def provide(self, request: ContextRequest) -> list[Message]:
+        return [await self._observer.observe()]
+
+
+@dataclass
+class MinesweeperAgent:
+    """应用层组合：运行时 + spec + 会话。"""
+
+    runtime: AgentRuntime
+    spec: AgentSpec
+    session: InMemorySession
+
+    async def run(self, task: str) -> AgentResult:
+        return await self.runtime.run_collect(self.spec, self.session, task)
+
+
+def build_registry(config: dict[str, Any], mouse: MouseController) -> ToolRegistry:
     geometry = BoardGeometry(**config["geometry"])
     restart = config["restart"]
     if restart["type"] == "click":
@@ -42,12 +75,13 @@ def build_registry(config: dict, mouse: MouseController) -> ToolRegistry:
 
 
 def build_agent(
-    config: dict,
-    llm,
+    config: dict[str, Any],
+    llm: Any,
     *,
     mouse: MouseController | None = None,
     capture: ScreenCapture | None = None,
-) -> ToolUseAgent:
+    session_id: str = "minesweeper",
+) -> MinesweeperAgent:
     geometry = BoardGeometry(**config["geometry"])
     region = CaptureRegion(**config["region"])
     mouse = mouse or MouseController()
@@ -59,10 +93,18 @@ def build_agent(
         max_px=config.get("image_max_px", 1300),
     )
     registry = build_registry(config, mouse)
-    return ToolUseAgent(
-        llm,
-        registry,
+    provider: ContextProvider = ObserverContextProvider(observer)
+    spec = AgentSpec(
+        llm=llm,
+        name="minesweeper",
         system_prompt=SYSTEM_PROMPT,
+        tools=registry.tools(),
+        context_providers=[provider],
         max_steps=config.get("max_steps", 300),
-        observer=observer,
+        tool_timeout=config.get("tool_timeout", 30.0),
+    )
+    return MinesweeperAgent(
+        runtime=AgentRuntime(),
+        spec=spec,
+        session=InMemorySession(id=session_id),
     )

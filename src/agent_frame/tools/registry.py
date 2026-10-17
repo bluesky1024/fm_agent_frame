@@ -36,6 +36,9 @@ class ToolRegistry:
     def names(self) -> list[str]:
         return list(self._tools.keys())
 
+    def tools(self) -> list[Tool]:
+        return list(self._tools.values())
+
     def to_tool_specs(self) -> list[ToolSpec]:
         """转成给 LLM 描述的工具列表。"""
         return [to_tool_spec(t) for t in self._tools.values()]

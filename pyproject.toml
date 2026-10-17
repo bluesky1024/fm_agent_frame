@@ -94,8 +94,6 @@ forbidden_modules = [
     "agent_frame.runtime",
     "agent_frame.capabilities",
     "agent_frame.interfaces",
-    "agent_frame.agent",
-    "agent_frame.prompt",
     "agent_frame.server",
     "agent_frame.desktop",
     "agent_frame.retrieval",

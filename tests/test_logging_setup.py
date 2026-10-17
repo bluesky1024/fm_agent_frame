@@ -36,7 +36,7 @@ def test_setup_logging_separates_llm_logs(tmp_path, restore_logging):
 
     llm_logger = logging.getLogger("agent_frame.llm")
     llm_logger.debug("LLM 专用内容")
-    logging.getLogger("agent_frame.agent").debug("普通内容")
+    logging.getLogger("agent_frame.runtime").debug("普通内容")
 
     for handler in logging.getLogger().handlers + llm_logger.handlers:
         handler.flush()
