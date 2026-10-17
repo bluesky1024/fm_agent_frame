@@ -1,4 +1,4 @@
-"""扫雷工具：click_cell / flag_cell / restart_game。
+"""扫雷工具：click_cell / flag_cell。
 
 鼠标等同步调用通过 ``asyncio.to_thread`` 隔离，避免阻塞事件循环。
 """
@@ -11,6 +11,7 @@ from typing import Any, ClassVar
 from agent_frame.capabilities.computer_use import MouseController
 from agent_frame.core.errors import ToolError
 from apps.minesweeper.board import BoardGeometry
+from apps.minesweeper.board_state import BoardProbe
 
 
 class ClickCellTool:
@@ -27,11 +28,30 @@ class ClickCellTool:
         "required": ["row", "col"],
     }
 
-    def __init__(self, geometry: BoardGeometry, mouse: MouseController) -> None:
+    def __init__(
+        self,
+        geometry: BoardGeometry,
+        mouse: MouseController,
+        *,
+        probe: BoardProbe | None = None,
+    ) -> None:
         self._geometry = geometry
         self._mouse = mouse
+        self._probe = probe
 
     async def run(self, row: int, col: int) -> str:
+        if self._probe is not None:
+            state = self._probe.cell_state(row, col)
+            if state == "revealed":
+                raise ToolError(
+                    f"格子 ({row}, {col}) 已经翻开，请选择其他未翻开的格子。",
+                    recoverable=True,
+                )
+            if state == "flagged":
+                raise ToolError(
+                    f"格子 ({row}, {col}) 已插旗；如果确认它是雷就不要点开。",
+                    recoverable=True,
+                )
         x, y = self._geometry.cell_center(row, col)
         await asyncio.to_thread(self._mouse.click, x, y, button="left")
         return "ok"
@@ -58,35 +78,4 @@ class FlagCellTool:
     async def run(self, row: int, col: int) -> str:
         x, y = self._geometry.cell_center(row, col)
         await asyncio.to_thread(self._mouse.shift_click, x, y)
-        return "ok"
-
-
-class RestartGameTool:
-    name: ClassVar[str] = "restart_game"
-    description: ClassVar[str] = (
-        "当本局已经结束（胜利，或踩到雷）时调用，重开一局新游戏。棋盘未结束时不要调用。"
-    )
-    parameters: ClassVar[dict[str, Any]] = {"type": "object", "properties": {}}
-
-    def __init__(
-        self,
-        mouse: MouseController,
-        *,
-        click_xy: tuple[int, int] | None = None,
-        key: str | None = None,
-    ) -> None:
-        if (click_xy is None) == (key is None):
-            raise ToolError("restart_game 需要且仅需一种重开方式：click_xy 或 key")
-        self._mouse = mouse
-        self._click_xy = click_xy
-        self._key = key
-
-    async def run(self) -> str:
-        if self._click_xy is not None:
-            x, y = self._click_xy
-            await asyncio.to_thread(self._mouse.click, x, y, button="left")
-            return "ok"
-        if self._key is None:
-            raise ToolError("restart_game 缺少重开方式", recoverable=False)
-        await asyncio.to_thread(self._mouse.press, self._key)
         return "ok"

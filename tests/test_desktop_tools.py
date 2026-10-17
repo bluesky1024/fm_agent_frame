@@ -1,8 +1,9 @@
 import pytest
 from apps.minesweeper.board import BoardGeometry
-from apps.minesweeper.tools import ClickCellTool, FlagCellTool, RestartGameTool
+from apps.minesweeper.tools import ClickCellTool, FlagCellTool
 
 from agent_frame.capabilities.computer_use.mouse import MouseController
+from agent_frame.core.errors import ToolError
 
 
 class FakeBackend:
@@ -53,6 +54,51 @@ async def test_click_cell_clicks_cell_center():
     assert out == "ok"
 
 
+class FakeProbe:
+    def __init__(self, state: str) -> None:
+        self.state = state
+        self.calls: list[tuple[int, int]] = []
+
+    def cell_state(self, row: int, col: int) -> str:
+        self.calls.append((row, col))
+        return self.state
+
+
+async def test_click_cell_rejects_revealed_cell():
+    b = FakeBackend()
+    tool = ClickCellTool(_geo(), MouseController(backend=b), probe=FakeProbe("revealed"))
+
+    with pytest.raises(ToolError) as excinfo:
+        await tool.run(row=2, col=3)
+
+    assert excinfo.value.recoverable is True
+    assert "已经翻开" in str(excinfo.value)
+    assert b.clicks == []
+
+
+async def test_click_cell_rejects_flagged_cell():
+    b = FakeBackend()
+    tool = ClickCellTool(_geo(), MouseController(backend=b), probe=FakeProbe("flagged"))
+
+    with pytest.raises(ToolError) as excinfo:
+        await tool.run(row=2, col=3)
+
+    assert excinfo.value.recoverable is True
+    assert "已插旗" in str(excinfo.value)
+    assert b.clicks == []
+
+
+async def test_click_cell_allows_retry_while_cell_is_still_covered():
+    # 上一次点击可能因窗口未处理而丢失；只要截图仍显示未翻开，就必须允许重试
+    b = FakeBackend()
+    tool = ClickCellTool(_geo(), MouseController(backend=b), probe=FakeProbe("covered"))
+
+    await tool.run(row=2, col=3)
+    await tool.run(row=2, col=3)
+
+    assert b.clicks == [(25, 15, "left"), (25, 15, "left")]
+
+
 async def test_flag_cell_shift_clicks_cell_center():
     b = FakeBackend()
     tool = FlagCellTool(_geo(), MouseController(backend=b))
@@ -65,24 +111,3 @@ async def test_flag_cell_shift_clicks_cell_center():
     assert out == "ok"
 
 
-async def test_restart_game_by_click():
-    b = FakeBackend()
-    tool = RestartGameTool(MouseController(backend=b), click_xy=(100, 100))
-    out = await tool.run()
-    assert b.clicks == [(100, 100, "left")]
-    assert out == "ok"
-
-
-async def test_restart_game_by_key():
-    b = FakeBackend()
-    tool = RestartGameTool(MouseController(backend=b), key="f2")
-    out = await tool.run()
-    assert b.presses == ["f2"]
-    assert out == "ok"
-
-
-def test_restart_game_requires_exactly_one_action():
-    with pytest.raises(Exception):
-        RestartGameTool(MouseController(backend=FakeBackend()))
-    with pytest.raises(Exception):
-        RestartGameTool(MouseController(backend=FakeBackend()), click_xy=(1, 1), key="f2")

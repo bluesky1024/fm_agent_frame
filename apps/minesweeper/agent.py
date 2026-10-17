@@ -12,14 +12,17 @@ from agent_frame.core.types import AgentResult
 from agent_frame.interfaces.session import InMemorySession
 from agent_frame.runtime import AgentRuntime, AgentSpec
 from agent_frame.tools import ToolRegistry
+from apps.minesweeper.board_state import BoardProbe
 from apps.minesweeper.config import MinesweeperConfig
 from apps.minesweeper.observer import BoardObserver
-from apps.minesweeper.prompt import SYSTEM_PROMPT
-from apps.minesweeper.tools import ClickCellTool, FlagCellTool, RestartGameTool
+from apps.minesweeper.prompt import build_system_prompt
+from apps.minesweeper.tools import ClickCellTool, FlagCellTool
 
 
 class ObserverContextProvider:
-    """每轮装配时抓一帧最新观察，作为请求视图的一部分（不写回历史）。"""
+    """每轮装配时抓一帧最新观察，追加在历史之后（不写回历史）。"""
+
+    placement = "after_history"
 
     def __init__(self, observer: ScreenObserver) -> None:
         self._observer = observer
@@ -40,17 +43,16 @@ class MinesweeperAgent:
         return await self.runtime.run_collect(self.spec, self.session, task)
 
 
-def build_registry(config: MinesweeperConfig, mouse: MouseController) -> ToolRegistry:
-    restart = config.restart
-    if restart.kind == "click":
-        restart_tool = RestartGameTool(mouse, click_xy=(restart.x, restart.y))
-    else:
-        restart_tool = RestartGameTool(mouse, key=restart.key)
+def build_registry(
+    config: MinesweeperConfig,
+    mouse: MouseController,
+    *,
+    probe: BoardProbe | None = None,
+) -> ToolRegistry:
     return ToolRegistry(
         [
-            ClickCellTool(config.geometry, mouse),
+            ClickCellTool(config.geometry, mouse, probe=probe),
             FlagCellTool(config.geometry, mouse),
-            restart_tool,
         ]
     )
 
@@ -68,16 +70,20 @@ def build_agent(
     observer = BoardObserver(
         capture,
         config.geometry,
+        mines=config.mines,
         detail=config.image_detail,
         max_px=config.image_max_px,
     )
-    registry = build_registry(config, mouse)
+    probe = BoardProbe(lambda: observer.last_image, observer.image_geometry)
+    registry = build_registry(config, mouse, probe=probe)
     provider: ContextProvider = ObserverContextProvider(observer)
     spec = AgentSpec(
         llm=llm,
         name="minesweeper",
         model=None,
-        system_prompt=SYSTEM_PROMPT,
+        system_prompt=build_system_prompt(
+            config.mines, config.geometry.rows * config.geometry.cols
+        ),
         tools=registry.tools(),
         context_providers=[provider],
         max_steps=config.max_steps,

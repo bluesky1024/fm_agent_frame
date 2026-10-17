@@ -34,14 +34,22 @@ class ScreenObserver:
         self._caption = caption
         self._detail = detail
         self._max_px = max_px
+        # 最近一帧原始截图（未标注、未缩放），供工具在动作前核对画面状态。
+        self.last_image: Image.Image | None = None
 
     async def observe(self) -> Message:
         image = await asyncio.to_thread(self._capture.grab)
+        self.last_image = image
+        caption = self._caption_for(image)
         if self.annotator is not None:
             image = await asyncio.to_thread(self.annotator.draw, image)
         image = await asyncio.to_thread(_downscale, image, self._max_px)
         png = await asyncio.to_thread(_to_png, image)
-        return Message.user_with_image(self._caption, png, detail=self._detail)
+        return Message.user_with_image(caption, png, detail=self._detail)
+
+    def _caption_for(self, image: Image.Image) -> str:
+        """子类可基于当前画面生成动态说明。"""
+        return self._caption
 
 
 def _downscale(img: Image.Image, max_px: int) -> Image.Image:

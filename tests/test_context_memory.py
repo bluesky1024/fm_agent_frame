@@ -19,8 +19,10 @@ from agent_frame.runtime import AgentRuntime, AgentSpec
 
 
 class StaticProvider:
-    def __init__(self, message: Message) -> None:
+    def __init__(self, message: Message, placement: str | None = None) -> None:
         self._message = message
+        if placement is not None:
+            self.placement = placement
 
     async def provide(self, request) -> list[Message]:
         return [self._message]
@@ -47,6 +49,31 @@ async def test_context_builder_orders_system_providers_and_history() -> None:
         "记忆召回：用户偏好中文",
         "检索片段：扫雷数字表示周围雷数",
         "历史问题",
+    ]
+
+
+async def test_context_builder_places_after_history_provider_last() -> None:
+    builder = ContextBuilder(
+        [
+            StaticProvider(Message.system("记忆召回：用户偏好中文")),
+            StaticProvider(Message.user("本轮最新截图"), placement="after_history"),
+        ]
+    )
+
+    built = await builder.build(
+        system_prompt="你是助手",
+        history=[Message.user("历史问题"), Message.assistant("历史回答")],
+        user_input="当前问题",
+        session_id="s1",
+    )
+
+    contents = [m.content for m in built.messages]
+    assert contents == [
+        "你是助手",
+        "记忆召回：用户偏好中文",
+        "历史问题",
+        "历史回答",
+        "本轮最新截图",
     ]
 
 

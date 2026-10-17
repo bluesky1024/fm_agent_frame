@@ -22,6 +22,11 @@ class ContextRequest(BaseModel):
 
 
 class ContextProvider(Protocol):
-    """为一个请求视图贡献额外的消息片段（按提供者顺序插入历史之前）。"""
+    """为一个请求视图贡献额外的消息片段（按提供者顺序插入历史之前）。
+
+    可选类属性 ``placement``：默认 ``"before_history"``；设为
+    ``"after_history"`` 时片段追加在历史之后，代表「本轮最新状态」
+    （例如视觉 agent 的当前截图）。
+    """
 
     async def provide(self, request: ContextRequest) -> list[Message]: ...

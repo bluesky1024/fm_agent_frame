@@ -68,7 +68,7 @@ MODEL=deepseek-flash python examples/04_minesweeper_autoplay.py
 run(spec, session, input)
   → Session 记录用户消息
   → 每步：ContextBuilder 装配请求视图
-       system + 记忆召回/检索片段 + 压缩后的历史
+       system + 记忆召回/检索片段 + 压缩后的历史 + 最新观察帧（若配置）
        （装配结果不写回持久历史）
   → LLMProvider.stream() → LLMDelta* → LLMCompleted
   → 有 tool_calls：审批 → ToolExecutor 校验/并行/超时 → ToolResult 回填历史

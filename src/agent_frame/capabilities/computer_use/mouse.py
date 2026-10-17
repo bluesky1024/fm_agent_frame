@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import sys
+import threading
 from typing import Protocol
 
 
@@ -43,23 +44,30 @@ class MouseController:
 
     def __init__(self, backend: MouseBackend | None = None) -> None:
         self._backend = backend or _default_backend()
+        # 工具批次会并行执行（asyncio.gather + to_thread）；pyautogui 的全局
+        # 鼠标状态不是线程安全的，Shift 与普通点击交错会把普通点击变成插旗。
+        self._lock = threading.Lock()
 
     def click(self, x: int, y: int, *, button: str = "left") -> None:
-        self._backend.click(x, y, button=button)
+        with self._lock:
+            self._backend.click(x, y, button=button)
 
     def move_to(self, x: int, y: int) -> None:
-        self._backend.moveTo(x, y)
+        with self._lock:
+            self._backend.moveTo(x, y)
 
     def press(self, key: str) -> None:
-        self._backend.press(key)
+        with self._lock:
+            self._backend.press(key)
 
     def shift_click(self, x: int, y: int, *, button: str = "left") -> None:
-        """按住 Shift 再点击；异常时也保证释放 Shift，避免按键卡住。"""
-        self._backend.keyDown("shift")
-        try:
-            self._backend.click(x, y, button=button)
-        finally:
-            self._backend.keyUp("shift")
+        """按住 Shift 再点击；整个过程持有锁，异常时也保证释放 Shift。"""
+        with self._lock:
+            self._backend.keyDown("shift")
+            try:
+                self._backend.click(x, y, button=button)
+            finally:
+                self._backend.keyUp("shift")
 
 
 def _default_backend() -> MouseBackend:

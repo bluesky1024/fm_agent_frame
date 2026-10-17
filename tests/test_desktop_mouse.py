@@ -1,3 +1,6 @@
+import threading
+import time
+
 from agent_frame.capabilities.computer_use.mouse import MouseController, enable_dpi_awareness
 
 
@@ -81,6 +84,40 @@ def test_shift_click_releases_shift_even_if_click_raises():
     except RuntimeError:
         pass
     assert b.events == [("keyDown", "shift"), ("keyUp", "shift")]
+
+
+def test_shift_click_is_atomic_against_concurrent_click():
+    class SlowBackend(FakeBackend):
+        def __init__(self) -> None:
+            super().__init__()
+            self.shift_down = threading.Event()
+
+        def keyDown(self, key):
+            super().keyDown(key)
+            self.shift_down.set()
+            time.sleep(0.05)
+
+        def click(self, *args, **kwargs):
+            super().click(*args, **kwargs)
+            time.sleep(0.02)
+
+    b = SlowBackend()
+    m = MouseController(backend=b)
+
+    holder = threading.Thread(target=lambda: m.shift_click(10, 20))
+    holder.start()
+    assert b.shift_down.wait(1.0)
+    plain = threading.Thread(target=lambda: m.click(30, 40))
+    plain.start()
+    holder.join(timeout=2.0)
+    plain.join(timeout=2.0)
+
+    assert b.events == [
+        ("keyDown", "shift"),
+        ("click", 10, 20, "left"),
+        ("keyUp", "shift"),
+        ("click", 30, 40, "left"),
+    ]
 
 
 def test_enable_dpi_awareness_does_not_raise():

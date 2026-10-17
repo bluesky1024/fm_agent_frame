@@ -9,6 +9,7 @@ from games.minesweeper import (
     HEADER,
     LABEL_MARGIN_X,
     LABEL_MARGIN_Y,
+    MINES,
     ROWS,
     MinesweeperBoard,
     board_config,
@@ -68,6 +69,7 @@ def test_board_config_geometry():
     assert cfg["geometry"]["cell_h"] == CELL
     assert cfg["geometry"]["rows"] == ROWS
     assert cfg["geometry"]["cols"] == COLS
+    assert cfg["mines"] == MINES
 
 
 def test_board_config_region_includes_label_margin():
@@ -78,9 +80,7 @@ def test_board_config_region_includes_label_margin():
     assert cfg["region"]["top"] == oy - LABEL_MARGIN_Y
     assert cfg["region"]["width"] == COLS * CELL + LABEL_MARGIN_X
     assert cfg["region"]["height"] == ROWS * CELL + LABEL_MARGIN_Y
-    assert cfg["restart"]["type"] == "click"
-    assert cfg["restart"]["x"] == GAME_ORIGIN_X + COLS * CELL // 2
-    assert cfg["restart"]["y"] == GAME_ORIGIN_Y + HEADER // 2
+    assert "restart" not in cfg
 
 
 async def test_annotated_frame_contains_row_col_labels():
@@ -95,7 +95,7 @@ async def test_annotated_frame_contains_row_col_labels():
     cfg = board_config()
     geo = BoardGeometry(**cfg["geometry"])
     cap = ScreenCapture(CaptureRegion(**cfg["region"]), backend=_Backend())
-    msg = await BoardObserver(cap, geo).observe()
+    msg = await BoardObserver(cap, geo, mines=MINES).observe()
 
     data_url = msg.content[1].image_url["url"]
     png = base64.b64decode(data_url.split(",", 1)[1])

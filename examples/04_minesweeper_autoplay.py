@@ -8,7 +8,7 @@
 前提：
     - 已设置 DEEPSEEK_API_KEY（环境变量或 .env）。
     - macOS 需在「系统设置 → 隐私与安全性 → 辅助功能」授权终端/Python 控制鼠标。
-停止：Ctrl+C。
+停止：打完一局（胜利或踩雷）后自动退出；随时也可 Ctrl+C。
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ async def main() -> None:
     try:
         time.sleep(1.5)  # 等游戏窗口出现
         llm = OpenAICompatProvider(settings)
-        print(f"开始自动扫雷（模型={settings.model}，Ctrl+C 停止）...")
+        print(f"开始自动扫雷（模型={settings.model}，打完一局后退出，Ctrl+C 可随时停止）...")
         result = await run_autoplay(config, llm)
         print("\n===== 结束 =====")
         print(result.output)
@@ -55,4 +55,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n已取消。")

@@ -1,7 +1,6 @@
 from apps.minesweeper import (
     BoardGeometry,
     MinesweeperConfig,
-    RestartSpec,
     build_agent,
     build_registry,
 )
@@ -36,26 +35,20 @@ class _FakeScreenBackend:
         return Image.new("RGB", (region.width, region.height), "white")
 
 
-def _config(restart: RestartSpec | None = None) -> MinesweeperConfig:
+def _config() -> MinesweeperConfig:
     return MinesweeperConfig(
         geometry=BoardGeometry(origin_x=0, origin_y=0, cell_w=10, cell_h=10, rows=9, cols=9),
         region=CaptureRegion(left=0, top=0, width=100, height=100),
-        restart=restart or RestartSpec(kind="click", x=50, y=50),
+        mines=3,
         image_detail="high",
         image_max_px=1300,
         max_steps=300,
     )
 
 
-def test_build_registry_has_three_tools():
+def test_build_registry_has_click_and_flag_tools():
     reg = build_registry(_config(), MouseController(backend=FakeBackend()))
-    assert set(reg.names()) == {"click_cell", "flag_cell", "restart_game"}
-
-
-def test_build_registry_supports_key_restart():
-    config = _config(RestartSpec(kind="key", key="f2"))
-    reg = build_registry(config, MouseController(backend=FakeBackend()))
-    assert "restart_game" in reg.names()
+    assert set(reg.names()) == {"click_cell", "flag_cell"}
 
 
 def test_build_agent_assembles_without_touching_screen():
@@ -66,6 +59,7 @@ def test_build_agent_assembles_without_touching_screen():
     mouse = MouseController(backend=FakeBackend())
     agent = build_agent(_config(), llm=object(), mouse=mouse, capture=cap)
     assert agent is not None
+    assert agent.spec.context_providers[0].placement == "after_history"
 
 
 def test_config_from_board_config_parses_typed_fields():
@@ -79,7 +73,7 @@ def test_config_from_board_config_parses_typed_fields():
             "cols": 6,
         },
         "region": {"left": 0, "top": 0, "width": 50, "height": 50},
-        "restart": {"type": "key", "key": "f2"},
+        "mines": 2,
         "image_detail": "low",
         "image_max_px": 800,
     }
@@ -89,7 +83,7 @@ def test_config_from_board_config_parses_typed_fields():
     assert config.geometry.rows == 5
     assert config.geometry.cols == 6
     assert config.region.width == 50
-    assert config.restart == RestartSpec(kind="key", key="f2")
+    assert config.mines == 2
     assert config.image_detail == "low"
     assert config.image_max_px == 800
     assert config.max_steps == 42

@@ -1,5 +1,7 @@
-"""每轮请求视图装配：system + 提供者片段 + 压缩后的历史。
+"""每轮请求视图装配：system + 前置片段 + 压缩后的历史 + 后置片段。
 
+提供者默认插入历史之前；声明 ``placement = "after_history"`` 的提供者
+（如视觉观察帧）追加在历史之后，成为模型看到的最新消息。
 装配结果只用于本次 LLM 调用，不写回 Session 历史（ADR-0004）。
 历史视图由记忆层提供（可能是「摘要 + 滑动窗口」）。
 """
@@ -45,8 +47,18 @@ class ContextBuilder:
             input=user_input,
             history=list(history),
         )
+        before_history: list[Message] = []
+        after_history: list[Message] = []
         for provider in self._providers:
-            messages.extend(await provider.provide(request))
+            provided = await provider.provide(request)
+            target = (
+                after_history
+                if getattr(provider, "placement", "before_history") == "after_history"
+                else before_history
+            )
+            target.extend(provided)
 
+        messages.extend(before_history)
         messages.extend(history)
+        messages.extend(after_history)
         return BuiltContext(messages=messages, token_estimate=estimate_tokens(messages))

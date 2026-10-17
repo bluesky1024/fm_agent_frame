@@ -13,7 +13,7 @@ CELL = 32
 HEADER = 40
 ROWS = 9
 COLS = 9
-MINES = 5
+MINES = 3
 GAME_ORIGIN_X = 200
 GAME_ORIGIN_Y = 200
 # 截屏区域在棋盘左/上留出的边距，供标注行列标尺（否则标尺会被裁到图外）
@@ -206,10 +206,10 @@ class MinesweeperGUI:
 
 
 def board_config() -> dict:
-    """返回 agent config 所需的几何/区域/重开参数（屏幕绝对坐标，1 基）。
+    """返回 agent config 所需的几何/区域参数（屏幕绝对坐标，1 基）。
 
-    棋盘左上角格子外沿在屏幕 (GAME_ORIGIN_X, GAME_ORIGIN_Y + HEADER)；
-    重开按钮中心在屏幕 (GAME_ORIGIN_X + COLS*CELL//2, GAME_ORIGIN_Y + HEADER//2)。
+    棋盘左上角格子外沿在屏幕 (GAME_ORIGIN_X, GAME_ORIGIN_Y + HEADER)。
+    重开按钮仅供人工使用，agent 一局制不需要它。
     """
     ox = GAME_ORIGIN_X
     oy = GAME_ORIGIN_Y + HEADER
@@ -222,16 +222,12 @@ def board_config() -> dict:
             "rows": ROWS,
             "cols": COLS,
         },
+        "mines": MINES,
         "region": {
             "left": ox - LABEL_MARGIN_X,
             "top": oy - LABEL_MARGIN_Y,
             "width": COLS * CELL + LABEL_MARGIN_X,
             "height": ROWS * CELL + LABEL_MARGIN_Y,
-        },
-        "restart": {
-            "type": "click",
-            "x": GAME_ORIGIN_X + COLS * CELL // 2,
-            "y": GAME_ORIGIN_Y + HEADER // 2,
         },
     }
 

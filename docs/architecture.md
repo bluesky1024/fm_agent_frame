@@ -156,7 +156,7 @@ Error(error, recoverable)
 | `ApprovalPolicy` | `runtime/policies.py` | `capabilities/hitl` | 工具执行前审批 |
 | `ToolSandbox` | `tools/base.py` | `capabilities/sandbox` | 工具执行隔离（首版 no-op） |
 | `ToolProvider` | `tools/base.py` | `capabilities/mcp` | 动态提供工具（首版接口） |
-| `ContextProvider` | `context/providers.py` | `capabilities/retrieval`、memory recall | 每轮贡献上下文片段 |
+| `ContextProvider` | `context/providers.py` | `capabilities/retrieval`、memory recall、视觉观察 | 每轮贡献上下文片段（默认前置；可声明 `placement="after_history"`） |
 | `Tracer` | `obs/tracer.py` | `obs` | 消费事件，输出 trace |
 | `MemoryStore` / `Summarizer` | `memory/base.py` | `memory` | 历史存取、压缩 |
 | `TaskDecomposer` / `Orchestrator` | `capabilities/multi_agent` | 同包 | 任务拆分与编排 |
@@ -176,7 +176,8 @@ AgentRuntime.run(spec, session, input) ── emit RunStart
   │
   └─ 循环（最多 max_steps 步）
        ├─ ContextBuilder.build(spec, session)
-       │    system prompt + 压缩后的历史 + 记忆召回 + 检索片段
+       │    system prompt + 前置片段（记忆召回/检索）+ 压缩后的历史
+       │    + 后置片段（观察帧等「当前状态」）
        │    （只用于本次调用，不写回历史）        ── emit ContextBuilt
        ├─ 输入护栏检查                            ── 违规则 emit Error / RunEnd
        ├─ LLMProvider.stream(messages, tools)
@@ -236,7 +237,7 @@ AgentRuntime.run(spec, session, input) ── emit RunStart
 ## 9. 应用边界
 
 - 框架只提供**通用计算机使用能力**：截屏、鼠标、观察、标注。不包含任何游戏规则。
-- 扫雷的棋盘几何、点击/插旗/重开工具、提示词、启动逻辑全部在 `apps/minesweeper/`。
+- 扫雷的棋盘几何、点击/插旗工具、结束结论、提示词、启动逻辑全部在 `apps/minesweeper/`。
 - `games/minesweeper.py` 保持不变，继续作为被操作的目标程序。
 - 框架包禁止 import `apps/`；应用通过公开 API 组装 Runtime、Spec 与工具。
 
