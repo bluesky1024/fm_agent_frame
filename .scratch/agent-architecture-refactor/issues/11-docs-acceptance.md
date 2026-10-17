@@ -15,4 +15,5 @@
 
 ## Comments
 
-- 2026-10-17: 完成。重写 README 与 roadmap，更新 architecture/minesweeper flow，新增 `docs/acceptance.md`（真实 API 人工验收清单，未执行）；重构计划标记完成并保留人工验收未勾选。补充最小 `interfaces/cli.py`（文档中已列出的能力）。`python scripts/check.py` 全绿：ruff、format、mypy（核心四包严格）、import-linter 5 条契约、142 passed（含 fake-LLM 扫雷 e2e）。示例 01–04 均可导入；示例 02 生成 `log/trace.jsonl`。旧模块路径与失效文档引用扫描为空。
+- 2026-10-17: 完成。重写 README 与 roadmap，更新 architecture/minesweeper flow，新增 `docs/acceptance.md`（真实 API 人工验收清单，未执行）；重构计划标记完成并保留人工验收未勾选。补充最小 `interfaces/cli.py`（文档中已列出的能力）。`python scripts/check.py` 全绿：ruff、format、mypy（核心四包严格）、import-linter 5 条契约、147 passed（含 fake-LLM 扫雷 e2e）。示例 01–04 均可导入；示例 02 生成 `log/trace.jsonl`。旧模块路径与失效文档引用扫描为空。
+- 2026-10-17: 双轴评审后的修复：中间件 after 钩子改为逆序（ADR-0002）；`AgentSpec.model` 透传给 provider，`AgentSpec.memory` 真正覆盖会话记忆；上下文预算/滑窗阈值纳入 `Settings`；审批记录写入 `session.state`；输出护栏不再泄露被拦截内容；致命工具错误补齐 tool 历史；Tracer 生命周期交还创建方（可跨运行复用）；删除兼容 shim、死代码与历史路径；`.[dev]` 补齐服务端依赖；历史设计文档加注说明。

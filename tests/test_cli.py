@@ -9,10 +9,10 @@ class ScriptedLLM:
     def __init__(self, results: list[str]) -> None:
         self._results = list(results)
 
-    async def chat(self, messages, tools=None) -> ChatResult:
+    async def chat(self, messages, tools=None, *, model=None) -> ChatResult:
         raise AssertionError("runtime 应使用 stream()")
 
-    async def stream(self, messages, tools=None):
+    async def stream(self, messages, tools=None, *, model=None):
         yield StreamChunk(result=ChatResult(content=self._results.pop(0)))
 
 

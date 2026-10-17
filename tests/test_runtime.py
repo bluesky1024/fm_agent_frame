@@ -31,12 +31,14 @@ class ScriptedLLM:
     def __init__(self, results: list[ChatResult]) -> None:
         self._results = list(results)
         self.requests: list[list[Message]] = []
+        self.models: list[str | None] = []
 
-    async def chat(self, messages, tools=None) -> ChatResult:
+    async def chat(self, messages, tools=None, *, model=None) -> ChatResult:
         raise AssertionError("runtime 应使用 stream()")
 
-    async def stream(self, messages, tools=None):
+    async def stream(self, messages, tools=None, *, model=None):
         self.requests.append(list(messages))
+        self.models.append(model)
         result = self._results.pop(0)
         if result.content:
             for char in result.content:
@@ -194,6 +196,17 @@ async def test_stream_deltas_are_emitted_before_completion() -> None:
     assert completed.message.content == "你好呀"
 
 
+async def test_spec_model_is_forwarded_to_provider() -> None:
+    llm = ScriptedLLM([ChatResult(content="ok")])
+    runtime = AgentRuntime()
+    session = InMemorySession(id="s1")
+    spec = _spec(llm, model="custom-model")
+
+    await _collect(runtime, spec, session, "hi")
+
+    assert llm.models == ["custom-model"]
+
+
 async def test_run_collect_returns_structured_result() -> None:
     llm = ScriptedLLM([ChatResult(content="答案", usage=TokenUsage(total_tokens=9))])
     runtime = AgentRuntime()
@@ -246,14 +259,62 @@ async def test_middleware_hooks_are_invoked() -> None:
     ]
 
 
+class NamedMiddleware(BaseMiddleware):
+    def __init__(self, name: str, log: list[str]) -> None:
+        self._name = name
+        self._log = log
+
+    async def before_llm(self, context, messages):
+        self._log.append(f"{self._name}:before_llm")
+        return messages
+
+    async def after_llm(self, context, result):
+        self._log.append(f"{self._name}:after_llm")
+        return result
+
+    async def before_tool(self, context, call):
+        self._log.append(f"{self._name}:before_tool")
+        return call
+
+    async def after_tool(self, context, result):
+        self._log.append(f"{self._name}:after_tool")
+        return result
+
+
+async def test_after_middleware_runs_in_reverse_order() -> None:
+    log: list[str] = []
+    llm = ScriptedLLM([_tool_call_result(), ChatResult(content="完成")])
+    spec = _spec(
+        llm,
+        middleware=[NamedMiddleware("one", log), NamedMiddleware("two", log)],
+    )
+
+    await _collect(AgentRuntime(), spec, InMemorySession(id="s1"), "算一下")
+
+    assert log == [
+        "one:before_llm",
+        "two:before_llm",
+        "two:after_llm",
+        "one:after_llm",
+        "one:before_tool",
+        "two:before_tool",
+        "two:after_tool",
+        "one:after_tool",
+        "one:before_llm",
+        "two:before_llm",
+        "two:after_llm",
+        "one:after_llm",
+    ]
+
+
 class BlockingLLM:
     def __init__(self) -> None:
         self.started = asyncio.Event()
 
-    async def chat(self, messages, tools=None) -> ChatResult:
+    async def chat(self, messages, tools=None, *, model=None) -> ChatResult:
         raise AssertionError("runtime 应使用 stream()")
 
-    async def stream(self, messages, tools=None):
+    async def stream(self, messages, tools=None, *, model=None):
         self.started.set()
         await asyncio.Event().wait()
         yield StreamChunk(result=ChatResult(content="不会到达"))
@@ -278,6 +339,31 @@ async def test_cancellation_emits_error_and_run_end() -> None:
 
     assert any(isinstance(e, Error) and "取消" in e.error for e in events)
     assert isinstance(events[-1], RunEnd)
+
+
+async def test_fatal_tool_error_leaves_valid_tool_history() -> None:
+    from agent_frame.core.errors import ToolError
+
+    class FatalTool:
+        name = "fatal"
+        description = "致命失败"
+        parameters: dict[str, Any] = {"type": "object", "properties": {}}
+
+        async def run(self) -> str:
+            raise ToolError("无法恢复", recoverable=False)
+
+    llm = ScriptedLLM([ChatResult(tool_calls=[ToolCall(id="c1", name="fatal", arguments={})])])
+    session = InMemorySession(id="s1")
+    spec = _spec(llm, tools=[FatalTool()])
+
+    events = await _collect(AgentRuntime(), spec, session, "试试")
+
+    assert any(isinstance(e, Error) for e in events)
+    assert isinstance(events[-1], RunEnd)
+    assert [m.role for m in session.history] == ["user", "assistant", "tool"]
+    assert session.history[1].tool_calls is not None
+    assert session.history[2].tool_call_id == "c1"
+    assert "无法恢复" in (session.history[2].content or "")
 
 
 async def test_tool_failure_is_written_to_history() -> None:

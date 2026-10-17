@@ -76,10 +76,10 @@ class ScriptedLLM:
         self._responses = list(responses)
         self.requests: list[list[Message]] = []
 
-    async def chat(self, messages, tools=None) -> ChatResult:
+    async def chat(self, messages, tools=None, *, model=None) -> ChatResult:
         raise AssertionError("runtime 应使用 stream()")
 
-    async def stream(self, messages, tools=None):
+    async def stream(self, messages, tools=None, *, model=None):
         self.requests.append(list(messages))
         content = self._responses.pop(0)
         yield StreamChunk(result=ChatResult(content=content))
@@ -122,6 +122,18 @@ async def test_runtime_applies_compacted_view_on_next_request() -> None:
     persisted = await memory.load("s1")
     assert len(persisted) == len(history) + 2  # 新问题 + 回答
     assert all(not str(m.content).startswith("此前对话摘要") for m in persisted)
+
+
+async def test_spec_memory_overrides_session_memory() -> None:
+    memory = ConversationMemory()
+    llm = ScriptedLLM(["答"])
+    session = InMemorySession(id="s1")
+    spec = _spec(llm, memory=memory)
+
+    await AgentRuntime().run_collect(spec, session, "你好")
+
+    stored = await memory.load("s1")
+    assert [m.role for m in stored] == ["user", "assistant"]
 
 
 async def test_sessions_are_isolated_and_accumulate_history() -> None:

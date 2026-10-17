@@ -38,6 +38,8 @@ async def main() -> None:
         tools=[CalculatorTool(), CurrentTimeTool()],
         max_steps=settings.max_steps,
         tool_timeout=settings.tool_timeout,
+        context_token_budget=settings.context_token_budget,
+        compaction_keep_last=settings.compaction_keep_last,
     )
     runtime = AgentRuntime()
     session = InMemorySession(id="interactive")

@@ -58,13 +58,16 @@ class OpenAICompatProvider:
         self,
         messages: Sequence[Message],
         tools: Sequence[ToolSpec] | None = None,
+        *,
+        model: str | None = None,
     ) -> ChatResult:
+        model_name = model or self._settings.model
         payload_tools = _tool_payload(tools)
         openai_messages = _to_openai_messages(messages)
-        self._log_request(openai_messages, payload_tools)
+        self._log_request(openai_messages, payload_tools, model_name)
         try:
             resp = await self._client.chat.completions.create(
-                model=self._settings.model,
+                model=model_name,
                 messages=openai_messages,
                 tools=payload_tools,
             )
@@ -96,10 +99,13 @@ class OpenAICompatProvider:
         self,
         messages: Sequence[Message],
         tools: Sequence[ToolSpec] | None = None,
+        *,
+        model: str | None = None,
     ) -> AsyncIterator[StreamChunk]:
+        model_name = model or self._settings.model
         payload_tools = _tool_payload(tools)
         openai_messages = _to_openai_messages(messages)
-        self._log_request(openai_messages, payload_tools)
+        self._log_request(openai_messages, payload_tools, model_name)
 
         content_parts: list[str] = []
         call_fragments: dict[int, dict[str, str]] = {}
@@ -108,7 +114,7 @@ class OpenAICompatProvider:
 
         try:
             response = await self._client.chat.completions.create(
-                model=self._settings.model,
+                model=model_name,
                 messages=openai_messages,
                 tools=payload_tools,
                 stream=True,
@@ -149,14 +155,17 @@ class OpenAICompatProvider:
         yield StreamChunk(result=result)
 
     def _log_request(
-        self, openai_messages: list[dict[str, Any]], payload_tools: list[dict[str, Any]] | None
+        self,
+        openai_messages: list[dict[str, Any]],
+        payload_tools: list[dict[str, Any]] | None,
+        model_name: str,
     ) -> None:
         pic_dir = Path(self._settings.log_dir) / "pic"
         logger.debug(
             "LLM 请求 | %s",
             json.dumps(
                 {
-                    "model": self._settings.model,
+                    "model": model_name,
                     "messages": save_images_and_strip(openai_messages, pic_dir),
                     "tools": payload_tools,
                 },

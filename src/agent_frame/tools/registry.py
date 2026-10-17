@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
 
 from agent_frame.core.errors import ToolError
 from agent_frame.core.types import ToolSpec
@@ -42,8 +41,3 @@ class ToolRegistry:
     def to_tool_specs(self) -> list[ToolSpec]:
         """转成给 LLM 描述的工具列表。"""
         return [to_tool_spec(t) for t in self._tools.values()]
-
-    async def call(self, name: str, arguments: dict[str, Any]) -> str:
-        """按名字执行一个工具（不做校验，供旧 Agent 使用）。"""
-        tool = self.get(name)
-        return await tool.run(**arguments)

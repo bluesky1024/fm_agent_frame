@@ -43,7 +43,7 @@ src/agent_frame/
 │   ├── base.py            # LLMProvider 协议：chat() / stream()
 │   └── openai_compat.py   # OpenAI 兼容实现（DeepSeek），流式、用量、重试
 ├── tools/
-│   ├── base.py            # ToolSpec、ToolResult、ToolProvider、ToolSandbox 协议
+│   ├── base.py            # ToolResult、ToolProvider、ToolSandbox 协议（ToolSpec 见 core/types）
 │   ├── registry.py        # 注册、查找、列表、导出 schema
 │   ├── executor.py        # 参数校验、并行执行、超时、错误分类
 │   └── builtin/           # calculator、time
@@ -54,8 +54,7 @@ src/agent_frame/
 ├── obs/
 │   ├── tracer.py          # Tracer 协议、ConsoleTracer、JSONLTracer
 │   ├── token.py           # token / 成本统计
-│   ├── logging_setup.py   # 运行日志双路输出
-│   └── llm_images.py      # 历史导入名，指向 core/images.py
+│   └── logging_setup.py   # 运行日志双路输出
 ├── context/
 │   ├── providers.py       # ContextProvider 协议（记忆召回、检索、用户画像…）
 │   ├── builder.py         # 每轮消息装配
@@ -231,7 +230,7 @@ AgentRuntime.run(spec, session, input) ── emit RunStart
 ## 8. 配置、错误与可观测
 
 - **配置**：`core/config.py` 统一用 pydantic-settings 读取 env/.env；应用不得再传裸 dict。日志目录、模型、最大步数、超时、token 预算都在配置中。
-- **错误分层**：`ConfigError`、`ProviderError(retryable)`、`ToolError(recoverable)`、`GuardrailViolation`、`StepLimitExceeded`、`Cancelled`。可恢复错误回填给 LLM，致命错误终止本次运行。
+- **错误分层**：`ConfigError`、`LLMError(retryable)`、`ToolError(recoverable)`、`GuardrailViolation`、`StepLimitExceeded`、`Cancelled`。可恢复错误回填给 LLM，致命错误终止本次运行。
 - **可观测**：运行日志与 LLM 原始交互日志保持现有双路输出（`log/agent.log`、`log/llm.log`）；新增事件驱动的 JSONL trace（默认 `log/trace.jsonl`），记录每步耗时、工具调用、token 用量。Trace 不依赖具体 provider。
 
 ## 9. 应用边界

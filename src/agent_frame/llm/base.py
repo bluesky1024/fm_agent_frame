@@ -49,10 +49,14 @@ class LLMProvider(Protocol):
         self,
         messages: Sequence[Message],
         tools: Sequence[ToolSpec] | None = None,
+        *,
+        model: str | None = None,
     ) -> ChatResult: ...
 
     def stream(
         self,
         messages: Sequence[Message],
         tools: Sequence[ToolSpec] | None = None,
+        *,
+        model: str | None = None,
     ) -> AsyncIterator[StreamChunk]: ...

@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from agent_frame.context.providers import ContextProvider, ContextRequest
 from agent_frame.core.messages import Message
@@ -50,10 +50,3 @@ class ContextBuilder:
 
         messages.extend(history)
         return BuiltContext(messages=messages, token_estimate=estimate_tokens(messages))
-
-
-@dataclass
-class MutableContextState:
-    """预留：供票 06 的压缩策略暂存每会话状态。"""
-
-    extra: dict[str, str] = field(default_factory=dict)

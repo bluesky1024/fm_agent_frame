@@ -16,10 +16,10 @@ class ScriptedLLM:
     def __init__(self, results: list[ChatResult]) -> None:
         self._results = list(results)
 
-    async def chat(self, messages, tools=None) -> ChatResult:
+    async def chat(self, messages, tools=None, *, model=None) -> ChatResult:
         raise AssertionError("runtime 应使用 stream()")
 
-    async def stream(self, messages, tools=None):
+    async def stream(self, messages, tools=None, *, model=None):
         result = self._results.pop(0)
         if result.content:
             for char in result.content:
@@ -58,6 +58,20 @@ async def test_jsonl_tracer_writes_readable_trace_file(tmp_path) -> None:
     assert types[-1] == "run_end"
     assert "tool_result" in types
     assert events[-1]["result"]["output"] == "答案是 4"
+
+
+async def test_jsonl_tracer_can_be_reused_across_runs(tmp_path) -> None:
+    tracer = JSONLTracer(tmp_path / "trace.jsonl")
+    llm = ScriptedLLM([ChatResult(content="一"), ChatResult(content="二")])
+    runtime = AgentRuntime()
+
+    await runtime.run_collect(_spec(llm, tracers=[tracer]), InMemorySession(id="s1"), "a")
+    await runtime.run_collect(_spec(llm, tracers=[tracer]), InMemorySession(id="s2"), "b")
+
+    lines = (tmp_path / "trace.jsonl").read_text(encoding="utf-8").splitlines()
+    types = [json.loads(line)["type"] for line in lines]
+    assert types.count("run_start") == 2
+    assert types.count("run_end") == 2
 
 
 async def test_console_tracer_prints_run_summary(capsys) -> None:

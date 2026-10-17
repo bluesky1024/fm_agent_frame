@@ -31,6 +31,8 @@ async def main() -> None:
         model=settings.model,
         system_prompt="你是一个简洁的中文助手。",
         max_steps=1,
+        context_token_budget=settings.context_token_budget,
+        compaction_keep_last=settings.compaction_keep_last,
     )
     runtime = AgentRuntime()
     session = InMemorySession(id="hello")

@@ -24,11 +24,9 @@ from agent_frame.core.events import (
 
 
 class Tracer(Protocol):
-    """消费运行时事件。"""
+    """消费运行时事件；生命周期由创建方管理，运行时不会关闭它。"""
 
     def on_event(self, event: AgentEvent) -> None: ...
-
-    def close(self) -> None: ...
 
 
 class ConsoleTracer:
@@ -57,9 +55,6 @@ class ConsoleTracer:
                 f"[trace] 运行结束 steps={event.result.steps} "
                 f"tokens={event.result.usage.total_tokens}"
             )
-
-    def close(self) -> None:
-        return None
 
 
 class JSONLTracer:

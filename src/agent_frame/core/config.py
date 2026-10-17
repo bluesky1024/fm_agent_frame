@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     max_steps: int = 8
     # 单次工具调用超时（秒）
     tool_timeout: float = 30.0
+    # 上下文 token 预算与摘要滑窗保留的最近消息数
+    context_token_budget: int = 4000
+    compaction_keep_last: int = 6
 
     # LLM 调用
     request_timeout: float = 60.0

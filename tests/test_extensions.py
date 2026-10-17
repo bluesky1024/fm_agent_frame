@@ -26,10 +26,10 @@ class ScriptedLLM:
         self._results = list(results)
         self.requests: list[list[Message]] = []
 
-    async def chat(self, messages, tools=None) -> ChatResult:
+    async def chat(self, messages, tools=None, *, model=None) -> ChatResult:
         raise AssertionError("runtime 应使用 stream()")
 
-    async def stream(self, messages, tools=None):
+    async def stream(self, messages, tools=None, *, model=None):
         self.requests.append(list(messages))
         result = self._results.pop(0)
         yield StreamChunk(result=result)
@@ -104,6 +104,12 @@ async def test_output_guardrail_blocks_and_does_not_persist_assistant() -> None:
     error = next(e for e in events if isinstance(e, Error))
     assert "输出被护栏拦截" in error.error
     assert [m.role for m in session.history] == ["user"]
+    # 被拦截的内容既不进入结果，也不进入 LLMCompleted 事件
+    end = events[-1]
+    assert isinstance(end, RunEnd)
+    assert end.result.output == ""
+    completed = next(e for e in events if e.type == "llm_completed")
+    assert getattr(completed, "message").content is None
 
 
 async def test_noop_guardrails_keep_default_behavior() -> None:
@@ -128,6 +134,9 @@ async def test_auto_approve_executes_tool_and_records_status() -> None:
     record = approval.status("c1")
     assert record is not None and record.approved is True
     assert any(m.role == "tool" and m.content == "4" for m in session.history)
+    # 审批记录属于 Session 状态
+    assert session.state["approvals"][0]["call_id"] == "c1"
+    assert session.state["approvals"][0]["approved"] is True
 
 
 class RejectAll:

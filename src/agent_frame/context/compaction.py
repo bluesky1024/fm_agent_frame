@@ -6,15 +6,17 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from agent_frame.core.messages import Message
 
 
+@runtime_checkable
 class Compactor(Protocol):
     async def compact(self, session_id: str, *, token_threshold: int, keep_last: int) -> bool: ...
 
 
+@runtime_checkable
 class HistoryView(Protocol):
     async def view(self, session_id: str) -> list[Message]: ...
 
@@ -26,16 +28,13 @@ async def compact_if_needed(
     token_threshold: int,
     keep_last: int,
 ) -> bool:
-    compact = getattr(memory, "compact", None)
-    if compact is None:
+    if not isinstance(memory, Compactor):
         return False
-    return bool(await compact(session_id, token_threshold=token_threshold, keep_last=keep_last))
+    return await memory.compact(session_id, token_threshold=token_threshold, keep_last=keep_last)
 
 
 async def history_view(memory: object, session_id: str) -> list[Message] | None:
     """若记忆提供 view，则返回压缩后的请求视图；否则返回 None。"""
-    view = getattr(memory, "view", None)
-    if view is None:
+    if not isinstance(memory, HistoryView):
         return None
-    result: list[Message] = await view(session_id)
-    return result
+    return await memory.view(session_id)

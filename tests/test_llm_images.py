@@ -2,7 +2,7 @@ import base64
 import hashlib
 import re
 
-from agent_frame.obs.llm_images import save_images_and_strip
+from agent_frame.core.images import save_images_and_strip
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"fake-png-bytes"
 

@@ -73,9 +73,6 @@ class TokenTracker:
                 self.runs.append(self._run)
                 self._run = None
 
-    def close(self) -> None:
-        return None
-
     def _finish_step(self, now: float) -> None:
         if self._run is not None and self._run.steps:
             current = self._run.steps[-1]
