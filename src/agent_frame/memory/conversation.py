@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from agent_frame.messages import Message
+from agent_frame.core.messages import Message
 
 
 class ConversationMemory:

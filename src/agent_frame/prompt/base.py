@@ -15,7 +15,7 @@ from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, Field
 
-from agent_frame.messages import Message
+from agent_frame.core.messages import Message
 
 # ---------- 模板渲染 ----------
 

@@ -1,8 +1,8 @@
 import logging
 
-from agent_frame.config import Settings
+from agent_frame.core.config import Settings
+from agent_frame.core.messages import Message
 from agent_frame.llm import OpenAICompatProvider
-from agent_frame.messages import Message
 
 
 class _FakeMessage:
@@ -38,8 +38,7 @@ async def test_provider_emits_debug_logs(caplog):
     caplog.set_level(logging.DEBUG)
 
     settings = Settings(deepseek_api_key="test-key")
-    provider = OpenAICompatProvider(settings)
-    provider._client = _FakeClient()  # 替换真实 client，避免联网
+    provider = OpenAICompatProvider(settings, client=_FakeClient())
 
     result = await provider.chat([Message.user("你好")])
 
@@ -54,8 +53,7 @@ async def test_request_log_saves_image_to_pic_dir(tmp_path, caplog):
 
     png = b"\x89PNG\r\n\x1a\nimage-bytes"
     settings = Settings(deepseek_api_key="test-key", log_dir=str(tmp_path / "log"))
-    provider = OpenAICompatProvider(settings)
-    provider._client = _FakeClient()  # 替换真实 client，避免联网
+    provider = OpenAICompatProvider(settings, client=_FakeClient())
 
     await provider.chat([Message.user_with_image("棋盘", png)])
 

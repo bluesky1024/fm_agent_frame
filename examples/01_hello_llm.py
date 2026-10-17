@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import asyncio
 
-from agent_frame.config import get_settings
+from agent_frame.core.config import get_settings
+from agent_frame.core.messages import Message
 from agent_frame.llm import OpenAICompatProvider
-from agent_frame.messages import Message
 from agent_frame.obs import setup_logging
 
 

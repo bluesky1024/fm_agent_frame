@@ -1,6 +1,6 @@
 from agent_frame.agent import ToolUseAgent
+from agent_frame.core.messages import Message, ToolCall
 from agent_frame.llm.base import ChatResult
-from agent_frame.messages import Message, ToolCall
 from agent_frame.tools import ToolRegistry
 from agent_frame.tools.builtin import CalculatorTool
 

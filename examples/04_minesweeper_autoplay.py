@@ -19,7 +19,7 @@ import sys
 import time
 from pathlib import Path
 
-from agent_frame.config import get_settings
+from agent_frame.core.config import get_settings
 from agent_frame.desktop.minesweeper import build_agent
 from agent_frame.desktop.mouse import enable_dpi_awareness
 from agent_frame.llm import OpenAICompatProvider

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from agent_frame.errors import ToolError
+from agent_frame.core.errors import ToolError
 from agent_frame.llm.base import ToolSpec
 from agent_frame.tools.base import Tool, to_tool_spec
 

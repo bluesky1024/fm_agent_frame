@@ -1,7 +1,7 @@
 import base64
 
+from agent_frame.core.messages import Message
 from agent_frame.llm.openai_compat import _to_openai_messages
-from agent_frame.messages import Message
 
 
 def test_user_with_image_builds_text_and_image_parts():

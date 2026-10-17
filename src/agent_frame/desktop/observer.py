@@ -6,10 +6,10 @@ import io
 
 from PIL import Image
 
+from agent_frame.core.messages import Message
 from agent_frame.desktop.annotate import GridAnnotator
 from agent_frame.desktop.geometry import BoardGeometry
 from agent_frame.desktop.screen import ScreenCapture
-from agent_frame.messages import Message
 
 _DEFAULT_CAPTION = (
     "这是当前扫雷棋盘的截图，每个格子外侧已标注 1 基行列号。请根据棋盘状态决定下一步动作。"

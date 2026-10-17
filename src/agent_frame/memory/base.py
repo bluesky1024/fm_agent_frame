@@ -19,7 +19,7 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 
-from agent_frame.messages import Message
+from agent_frame.core.messages import Message
 
 # ---------- 短期对话记忆 ----------
 

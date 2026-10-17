@@ -14,10 +14,10 @@
 from __future__ import annotations
 
 from agent_frame.agent.base import AgentResult, AgentStep, Observer
-from agent_frame.errors import AgentLoopError
+from agent_frame.core.errors import AgentLoopError
+from agent_frame.core.messages import Message
 from agent_frame.llm.base import LLMProvider
 from agent_frame.memory.base import Memory
-from agent_frame.messages import Message
 from agent_frame.tools.registry import ToolRegistry
 
 

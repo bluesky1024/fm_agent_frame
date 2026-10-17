@@ -6,8 +6,8 @@ from typing import Protocol
 
 from pydantic import BaseModel, Field
 
+from agent_frame.core.messages import Message
 from agent_frame.memory.base import Memory
-from agent_frame.messages import Message
 
 
 class AgentStep(BaseModel):

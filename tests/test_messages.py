@@ -1,4 +1,4 @@
-from agent_frame.messages import Message, ToolCall
+from agent_frame.core.messages import Message, ToolCall
 
 
 def test_system_message():

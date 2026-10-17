@@ -1,13 +1,21 @@
-"""LLM 客户端抽象：统一封装「发消息 → 得回复（可能含工具调用）」。"""
+"""LLM 供应商协议：整包调用与流式调用。
+
+两条路径都返回同一个 ``ChatResult``：
+- ``chat()`` 直接返回完整结果；
+- ``stream()`` 逐段产出文本增量，最后一个 chunk 的 ``result`` 是组装好的完整结果。
+"""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, Protocol
+from collections.abc import AsyncIterator, Sequence
+from typing import Protocol
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from agent_frame.messages import Message, ToolCall
+from agent_frame.core.messages import Message, ToolCall
+from agent_frame.core.types import TokenUsage, ToolSpec
+
+__all__ = ["ChatResult", "LLMProvider", "StreamChunk", "ToolSpec"]
 
 
 class ChatResult(BaseModel):
@@ -15,18 +23,23 @@ class ChatResult(BaseModel):
 
     content: str | None = None
     tool_calls: list[ToolCall] | None = None
+    usage: TokenUsage = Field(default_factory=TokenUsage)
+    finish_reason: str | None = None
 
     @property
     def has_tool_calls(self) -> bool:
         return bool(self.tool_calls)
 
 
-class ToolSpec(BaseModel):
-    """给 LLM 描述一个可用工具（对应 OpenAI function 内层对象）。"""
+class StreamChunk(BaseModel):
+    """流式调用的一个片段。
 
-    name: str
-    description: str
-    parameters: dict[str, Any]
+    ``text_delta`` 非空时是文本增量；``result`` 非空时表示流结束，
+    携带拼接完成的完整 ``ChatResult``。
+    """
+
+    text_delta: str = ""
+    result: ChatResult | None = None
 
 
 class LLMProvider(Protocol):
@@ -37,3 +50,9 @@ class LLMProvider(Protocol):
         messages: Sequence[Message],
         tools: Sequence[ToolSpec] | None = None,
     ) -> ChatResult: ...
+
+    def stream(
+        self,
+        messages: Sequence[Message],
+        tools: Sequence[ToolSpec] | None = None,
+    ) -> AsyncIterator[StreamChunk]: ...

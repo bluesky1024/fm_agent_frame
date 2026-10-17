@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
+from agent_frame.core.errors import ToolError
 from agent_frame.desktop.mouse import MouseController
-from agent_frame.errors import ToolError
 
 
 class RestartGameTool:

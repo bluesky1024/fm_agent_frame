@@ -45,17 +45,18 @@ select = ["E", "F", "I", "W"]
 
 [tool.mypy]
 python_version = "3.12"
-# llm 与 tools 在票 02/03 重构后再纳入检查并收紧为 strict
+# tools 在票 03 重构后再纳入检查并收紧为 strict
 files = [
     "src/agent_frame/core",
     "src/agent_frame/runtime",
+    "src/agent_frame/llm",
 ]
 warn_unused_configs = true
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-# llm 与 tools 在票 02/03 重构后再收紧为 strict
-module = ["agent_frame.core.*", "agent_frame.runtime.*"]
+# tools 在票 03 重构后再收紧为 strict
+module = ["agent_frame.core.*", "agent_frame.runtime.*", "agent_frame.llm.*"]
 strict = true
 
 [tool.importlinter]
@@ -74,8 +75,6 @@ layers = [
     "agent_frame.core",
 ]
 ignore_imports = [
-    # 遗留违规，票 02 重构 LLM 层时移除
-    "agent_frame.llm.openai_compat -> agent_frame.obs.llm_images",
     # 遗留违规，票 03 重构工具层时移除
     "agent_frame.tools.base -> agent_frame.llm.base",
     "agent_frame.tools.registry -> agent_frame.llm.base",
