@@ -10,12 +10,14 @@ from typing import Any, Protocol
 
 from agent_frame.core.messages import Message
 from agent_frame.core.types import AgentResult
+from agent_frame.memory.base import Memory
 
 
 class Session(Protocol):
     """运行状态载体。"""
 
     id: str
+    memory: Memory
     history: list[Message]
     state: dict[str, Any]
     last_run: AgentResult | None

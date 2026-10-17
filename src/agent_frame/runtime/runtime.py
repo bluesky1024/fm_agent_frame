@@ -13,6 +13,7 @@ import uuid
 from collections.abc import AsyncIterator
 
 from agent_frame.context.builder import ContextBuilder
+from agent_frame.context.compaction import compact_if_needed, history_view
 from agent_frame.core.errors import LLMError, ToolError
 from agent_frame.core.events import (
     AgentEvent,
@@ -49,7 +50,8 @@ class AgentRuntime:
         run_id = uuid.uuid4().hex[:12]
         yield RunStart(run_id=run_id, session_id=session.id, input=user_input)
 
-        session.history.append(Message.user(user_input))
+        session.history = await session.memory.load(session.id)
+        await self._append(session, Message.user(user_input))
 
         builder = ContextBuilder(spec.context_providers)
         executor = ToolExecutor(
@@ -68,9 +70,16 @@ class AgentRuntime:
             for step in range(spec.max_steps):
                 yield StepStart(step=step)
 
+                await compact_if_needed(
+                    session.memory,
+                    session.id,
+                    token_threshold=spec.context_token_budget,
+                    keep_last=spec.compaction_keep_last,
+                )
+                history = await history_view(session.memory, session.id) or session.history
                 context = await builder.build(
                     system_prompt=spec.system_prompt,
-                    history=session.history,
+                    history=history,
                     user_input=user_input,
                     session_id=session.id,
                 )
@@ -114,8 +123,9 @@ class AgentRuntime:
                 )
 
                 # 工具轮的 assistant 文本随 tool_calls 一起落历史
-                session.history.append(
-                    Message.assistant(content=completion.content, tool_calls=completion.tool_calls)
+                await self._append(
+                    session,
+                    Message.assistant(content=completion.content, tool_calls=completion.tool_calls),
                 )
 
                 if not completion.tool_calls:
@@ -153,7 +163,7 @@ class AgentRuntime:
                         content=tool_result.content,
                         error=tool_result.error,
                     )
-                    session.history.append(_tool_message(call, tool_result))
+                    await self._append(session, _tool_message(call, tool_result))
 
             result_value = AgentResult(output=last_text, usage=total_usage, steps=steps_taken)
             session.last_run = result_value
@@ -173,6 +183,11 @@ class AgentRuntime:
             session.last_run = result_value
             yield ErrorEvent(error=str(exc), recoverable=exc.retryable)
             yield RunEnd(result=result_value)
+
+    async def _append(self, session: Session, message: Message) -> None:
+        """把消息写入持久历史（记忆），供下一轮重新加载。"""
+        session.history.append(message)
+        await session.memory.save(session.id, session.history)
 
     async def run_collect(self, spec: AgentSpec, session: Session, user_input: str) -> AgentResult:
         """跑完一轮并把事件流收集为结构化结果。"""

@@ -8,10 +8,11 @@ from agent_frame.memory.base import (
     ProfileMemory,
     SemanticMemory,
     Summarizer,
-    SummaryBufferMemory,
+    SummaryBufferMemoryProtocol,
     UserProfile,
 )
 from agent_frame.memory.conversation import ConversationMemory
+from agent_frame.memory.summary_buffer import SummaryBufferMemory, TruncatingSummarizer
 
 __all__ = [
     "AgentMemory",
@@ -25,5 +26,7 @@ __all__ = [
     "SemanticMemory",
     "Summarizer",
     "SummaryBufferMemory",
+    "SummaryBufferMemoryProtocol",
+    "TruncatingSummarizer",
     "UserProfile",
 ]

@@ -30,6 +30,9 @@ class AgentSpec:
     memory: Memory | None = None
     max_steps: int = 8
     tool_timeout: float | None = 30.0
+    # 上下文 token 预算与摘要滑窗保留的最近消息数（仅对 SummaryBufferMemory 生效）
+    context_token_budget: int = 4000
+    compaction_keep_last: int = 6
     middleware: Sequence[Middleware] = ()
     input_guards: Sequence[Guardrail] = ()
     output_guards: Sequence[Guardrail] = ()

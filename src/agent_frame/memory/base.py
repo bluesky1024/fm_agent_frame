@@ -164,7 +164,7 @@ class Summarizer(Protocol):
     async def summarize(self, messages: Sequence[Message]) -> str: ...
 
 
-class SummaryBufferMemory(Protocol):
+class SummaryBufferMemoryProtocol(Protocol):
     """「摘要 + 缓冲」记忆：更早历史压成摘要，最近几轮保留原文。
 
     - load 返回「摘要 + 最近原文」拼成的消息列表（摘要放最前，缓存友好）

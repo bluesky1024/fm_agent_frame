@@ -1,7 +1,7 @@
-"""每轮请求视图装配：system + 提供者片段 + 持久历史。
+"""每轮请求视图装配：system + 提供者片段 + 压缩后的历史。
 
 装配结果只用于本次 LLM 调用，不写回 Session 历史（ADR-0004）。
-首版实现不做压缩；token 预算与摘要压缩在票 06 接入。
+历史视图由记忆层提供（可能是「摘要 + 滑动窗口」）。
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 
 from agent_frame.context.providers import ContextProvider, ContextRequest
 from agent_frame.core.messages import Message
+from agent_frame.core.tokens import estimate_tokens
 
 
 @dataclass(frozen=True)
@@ -49,19 +50,6 @@ class ContextBuilder:
 
         messages.extend(history)
         return BuiltContext(messages=messages, token_estimate=estimate_tokens(messages))
-
-
-def estimate_tokens(messages: Sequence[Message]) -> int:
-    """粗略估算 token：按字符数 / 4，只用于事件与调试。"""
-    chars = 0
-    for message in messages:
-        if isinstance(message.content, str):
-            chars += len(message.content)
-        elif message.content is not None:
-            chars += sum(len(str(part)) for part in message.content)
-        if message.tool_calls:
-            chars += sum(len(str(call)) for call in message.tool_calls)
-    return max(1, chars // 4)
 
 
 @dataclass

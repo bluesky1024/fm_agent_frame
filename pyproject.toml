@@ -96,7 +96,6 @@ forbidden_modules = [
     "agent_frame.interfaces",
     "agent_frame.server",
     "agent_frame.desktop",
-    "agent_frame.retrieval",
     "agent_frame.multi_agent",
     "agent_frame.eval",
 ]
