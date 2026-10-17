@@ -1,57 +1,51 @@
 from PIL import Image
 
-from agent_frame.desktop.screen import CaptureRegion, ScreenCapture
+from agent_frame.capabilities.computer_use.screen import CaptureRegion, ScreenCapture
 
 
-def test_grab_delegates_to_grabber_with_region():
+class FakeScreenBackend:
+    def __init__(self) -> None:
+        self.regions: list[CaptureRegion] = []
+
+    def grab(self, region: CaptureRegion) -> Image.Image:
+        self.regions.append(region)
+        return Image.new("RGB", (region.width, region.height), "white")
+
+
+def test_grab_delegates_to_backend_with_region():
     region = CaptureRegion(left=10, top=20, width=30, height=40)
-    seen = {}
+    backend = FakeScreenBackend()
 
-    def fake_grabber(r):
-        seen["region"] = r
-        return Image.new("RGB", (r.width, r.height), "white")
-
-    cap = ScreenCapture(region, grabber=fake_grabber)
+    cap = ScreenCapture(region, backend=backend)
     img = cap.grab()
 
     assert img.size == (30, 40)
-    assert seen["region"] is region
+    assert backend.regions == [region]
     assert cap.region == region
 
 
 def test_grab_resizes_when_scale_is_not_one():
     region = CaptureRegion(left=0, top=0, width=30, height=40)
-    seen = {}
+    backend = FakeScreenBackend()
 
-    def fake_grabber(r):
-        seen["region"] = r
-        # 模拟 mss 返回物理像素（2x）
-        return Image.new("RGB", (r.width, r.height), "white")
-
-    cap = ScreenCapture(region, grabber=fake_grabber, scale=2.0)
+    cap = ScreenCapture(region, backend=backend, scale=2.0)
     img = cap.grab()
 
-    # 图像归一化到逻辑尺寸
     assert img.size == (30, 40)
-    # grabber 收到的是 ×2 的 mss 坐标
-    assert seen["region"].width == 60
-    assert seen["region"].height == 80
-    assert seen["region"].left == 0
-    assert seen["region"].top == 0
+    assert backend.regions[0].width == 60
+    assert backend.regions[0].height == 80
+    assert backend.regions[0].left == 0
+    assert backend.regions[0].top == 0
 
 
 def test_grab_derives_scaled_width_from_edges():
     region = CaptureRegion(left=0, top=0, width=13, height=13)
-    seen = {}
+    backend = FakeScreenBackend()
 
-    def fake_grabber(r):
-        seen["region"] = r
-        return Image.new("RGB", (r.width, r.height), "white")
-
-    cap = ScreenCapture(region, grabber=fake_grabber, scale=1.5)
+    cap = ScreenCapture(region, backend=backend, scale=1.5)
     img = cap.grab()
 
-    # 13 * 1.5 = 19.5；独立 int() 截断得 19 会丢右边界，正确是 round(19.5)=20
-    assert seen["region"].width == 20
-    assert seen["region"].height == 20
+    # 13 * 1.5 = 19.5；正确是 round(19.5)=20
+    assert backend.regions[0].width == 20
+    assert backend.regions[0].height == 20
     assert img.size == (13, 13)

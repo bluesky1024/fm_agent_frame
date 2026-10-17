@@ -1,4 +1,7 @@
-"""鼠标与按键控制（基于 pyautogui），以及 Windows 高 DPI 对齐。"""
+"""鼠标与按键控制（基于 pyautogui），以及 Windows 高 DPI 对齐。
+
+``MouseBackend`` 是外部边界协议，测试可注入假实现。
+"""
 
 from __future__ import annotations
 
@@ -6,7 +9,7 @@ import sys
 from typing import Protocol
 
 
-class InputBackend(Protocol):
+class MouseBackend(Protocol):
     """pyautogui 所需的最小接口；测试用 fake 实现。
 
     注意 button 必须按关键字传递：pyautogui.click 的第 3 个位置参数是 clicks
@@ -21,10 +24,7 @@ class InputBackend(Protocol):
 
 
 def enable_dpi_awareness() -> None:
-    """Windows 高 DPI 下让屏幕坐标对齐物理像素；非 Windows 为 no-op。
-
-    必须在使用坐标点击前调用，否则缩放会把点击位置带偏。
-    """
+    """Windows 高 DPI 下让屏幕坐标对齐物理像素；非 Windows 为 no-op。"""
     if sys.platform != "win32":
         return
     import ctypes
@@ -41,7 +41,7 @@ def enable_dpi_awareness() -> None:
 class MouseController:
     """把点击/移动/按键转发给底层后端（默认 pyautogui）。"""
 
-    def __init__(self, backend: InputBackend | None = None) -> None:
+    def __init__(self, backend: MouseBackend | None = None) -> None:
         self._backend = backend or _default_backend()
 
     def click(self, x: int, y: int, *, button: str = "left") -> None:
@@ -54,11 +54,7 @@ class MouseController:
         self._backend.press(key)
 
     def shift_click(self, x: int, y: int, *, button: str = "left") -> None:
-        """按住 Shift 再点击。
-
-        macOS 上 tkinter 收不到合成右键事件，因此「插旗」用 Shift+左键代替；
-        点击抛异常时也保证释放 Shift，避免按键卡住。
-        """
+        """按住 Shift 再点击；异常时也保证释放 Shift，避免按键卡住。"""
         self._backend.keyDown("shift")
         try:
             self._backend.click(x, y, button=button)
@@ -66,7 +62,7 @@ class MouseController:
             self._backend.keyUp("shift")
 
 
-def _default_backend() -> InputBackend:
+def _default_backend() -> MouseBackend:
     import pyautogui  # 延迟导入，避免测试环境需要 GUI 依赖
 
     return pyautogui

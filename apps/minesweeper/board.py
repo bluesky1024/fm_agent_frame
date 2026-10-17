@@ -8,7 +8,7 @@ from pydantic import BaseModel
 class BoardGeometry(BaseModel):
     """棋盘在屏幕上的几何布局。
 
-    origin_x/origin_y 是左上角格子外沿的屏幕绝对物理像素；
+    origin_x/origin_y 是左上角格子外沿的屏幕绝对像素；
     cell_w/cell_h 是单格宽高；行列号约定为 1 基。
     """
 
@@ -30,7 +30,7 @@ class BoardGeometry(BaseModel):
         return x, y
 
     def translated(self, dx: int, dy: int) -> "BoardGeometry":
-        """返回平移后的副本（只改原点）。用于把屏幕坐标映射到截屏图像坐标。"""
+        """返回平移后的副本（只改原点）。用于屏幕坐标 → 截屏图像坐标。"""
         return self.model_copy(
             update={"origin_x": self.origin_x + dx, "origin_y": self.origin_y + dy}
         )

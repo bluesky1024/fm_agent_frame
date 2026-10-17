@@ -1,7 +1,7 @@
+from apps.minesweeper.board import BoardGeometry
 from PIL import Image
 
-from agent_frame.desktop.annotate import GridAnnotator
-from agent_frame.desktop.geometry import BoardGeometry
+from agent_frame.capabilities.computer_use.annotate import GridAnnotator
 
 
 def _geo() -> BoardGeometry:

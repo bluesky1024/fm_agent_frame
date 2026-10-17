@@ -1,13 +1,17 @@
+from apps.minesweeper import BoardGeometry, BoardObserver
 from PIL import Image
 
-from agent_frame.desktop.geometry import BoardGeometry
-from agent_frame.desktop.observer import BoardObserver
-from agent_frame.desktop.screen import CaptureRegion, ScreenCapture
+from agent_frame.capabilities.computer_use import CaptureRegion, ScreenCapture
+
+
+class FakeBackend:
+    def grab(self, region: CaptureRegion) -> Image.Image:
+        return Image.new("RGB", (region.width, region.height), "white")
 
 
 def _capture(left=0, top=0, w=200, h=200) -> ScreenCapture:
     region = CaptureRegion(left=left, top=top, width=w, height=h)
-    return ScreenCapture(region, grabber=lambda r: Image.new("RGB", (r.width, r.height), "white"))
+    return ScreenCapture(region, backend=FakeBackend())
 
 
 def _geo(origin_x=20, origin_y=20) -> BoardGeometry:
@@ -30,5 +34,6 @@ async def test_observe_returns_image_user_message():
 async def test_observe_offsets_geometry_into_image_space():
     # 截屏区域从 (50,60) 开始，几何原点也是 (50,60) → 图像空间应为 (0,0)
     obs = BoardObserver(_capture(left=50, top=60, w=100, h=100), _geo(50, 60))
+    assert obs.annotator is not None
     assert obs.annotator.geometry.origin_x == 0
     assert obs.annotator.geometry.origin_y == 0

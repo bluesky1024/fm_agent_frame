@@ -1,8 +1,8 @@
 import pytest
+from apps.minesweeper.board import BoardGeometry
+from apps.minesweeper.tools import ClickCellTool, FlagCellTool, RestartGameTool
 
-from agent_frame.desktop.geometry import BoardGeometry
-from agent_frame.desktop.mouse import MouseController
-from agent_frame.tools.desktop import ClickCellTool, FlagCellTool, RestartGameTool
+from agent_frame.capabilities.computer_use.mouse import MouseController
 
 
 class FakeBackend:

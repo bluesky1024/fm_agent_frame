@@ -14,31 +14,22 @@
 from __future__ import annotations
 
 import asyncio
-import subprocess
 import sys
 import time
 from pathlib import Path
 
+from agent_frame.capabilities.computer_use import enable_dpi_awareness
 from agent_frame.core.config import get_settings
-from agent_frame.desktop.minesweeper import build_agent
-from agent_frame.desktop.mouse import enable_dpi_awareness
 from agent_frame.llm import OpenAICompatProvider
 from agent_frame.obs import setup_logging
 
-# games/ 不在已安装的包里（打包只收 src/）：直接运行本脚本时把仓库根加入 sys.path
+# apps/ 与 games/ 不在已安装的包里（打包只收 src/）：直接运行本脚本时把仓库根加入 sys.path
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from games.minesweeper import board_config  # noqa: E402  需先补 sys.path
-
-GAME_PATH = Path(__file__).resolve().parent.parent / "games" / "minesweeper.py"
-
-
-def build_config() -> dict:
-    cfg = board_config()
-    cfg.update({"image_detail": "high", "image_max_px": 1300, "max_steps": 300})
-    return cfg
+from apps.minesweeper import MinesweeperConfig, launch_game, run_autoplay  # noqa: E402
+from games.minesweeper import board_config  # noqa: E402
 
 
 async def main() -> None:
@@ -46,13 +37,17 @@ async def main() -> None:
     settings = get_settings()
     setup_logging(settings.log_level, settings.log_dir, console=settings.log_console)
 
-    proc = subprocess.Popen([sys.executable, str(GAME_PATH)])
+    config = MinesweeperConfig.from_board_config(
+        board_config(),
+        max_steps=300,
+        tool_timeout=settings.tool_timeout,
+    )
+    proc = launch_game()
     try:
         time.sleep(1.5)  # 等游戏窗口出现
         llm = OpenAICompatProvider(settings)
-        agent = build_agent(build_config(), llm)
         print(f"开始自动扫雷（模型={settings.model}，Ctrl+C 停止）...")
-        result = await agent.run("赢下这局扫雷。")
+        result = await run_autoplay(config, llm)
         print("\n===== 结束 =====")
         print(result.output)
     finally:

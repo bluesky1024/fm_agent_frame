@@ -1,12 +1,8 @@
-from agent_frame.desktop.mouse import MouseController, enable_dpi_awareness
+from agent_frame.capabilities.computer_use.mouse import MouseController, enable_dpi_awareness
 
 
 class FakeBackend:
-    """签名模拟真实 pyautogui.click：第 3 个位置参数是 clicks，不是 button。
-
-    这样能抓到「把 button 按位置传参」的错误（真实 pyautogui 会把它当成 clicks）。
-    events 按调用顺序记录所有操作，用于验证 shift_click 的按下/点击/释放顺序。
-    """
+    """签名模拟真实 pyautogui.click：第 3 个位置参数是 clicks，不是 button。"""
 
     def __init__(self) -> None:
         self.clicks = []

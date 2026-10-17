@@ -84,16 +84,17 @@ def test_board_config_region_includes_label_margin():
 
 
 async def test_annotated_frame_contains_row_col_labels():
-    from agent_frame.desktop.geometry import BoardGeometry
-    from agent_frame.desktop.observer import BoardObserver
-    from agent_frame.desktop.screen import CaptureRegion, ScreenCapture
+    from apps.minesweeper import BoardGeometry, BoardObserver
+
+    from agent_frame.capabilities.computer_use import CaptureRegion, ScreenCapture
+
+    class _Backend:
+        def grab(self, region):
+            return Image.new("RGB", (region.width, region.height), "white")
 
     cfg = board_config()
     geo = BoardGeometry(**cfg["geometry"])
-    cap = ScreenCapture(
-        CaptureRegion(**cfg["region"]),
-        grabber=lambda r: Image.new("RGB", (r.width, r.height), "white"),
-    )
+    cap = ScreenCapture(CaptureRegion(**cfg["region"]), backend=_Backend())
     msg = await BoardObserver(cap, geo).observe()
 
     data_url = msg.content[1].image_url["url"]

@@ -1,6 +1,5 @@
 import pytest
-
-from agent_frame.desktop.geometry import BoardGeometry
+from apps.minesweeper.board import BoardGeometry
 
 
 def _geo() -> BoardGeometry:
