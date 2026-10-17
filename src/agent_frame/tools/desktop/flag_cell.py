@@ -11,8 +11,7 @@ from agent_frame.desktop.mouse import MouseController
 class FlagCellTool:
     name: ClassVar[str] = "flag_cell"
     description: ClassVar[str] = (
-        "给指定的格子插旗（标记为此处是雷）。"
-        "row/col 为 1 基行列号，与棋盘截图上标注的行列号一致。"
+        "给指定的格子插旗（标记为此处是雷）。row/col 为 1 基行列号，与棋盘截图上标注的行列号一致。"
     )
     parameters: ClassVar[dict[str, Any]] = {
         "type": "object",

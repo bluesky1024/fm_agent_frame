@@ -85,6 +85,4 @@ def test_restart_game_requires_exactly_one_action():
     with pytest.raises(Exception):
         RestartGameTool(MouseController(backend=FakeBackend()))
     with pytest.raises(Exception):
-        RestartGameTool(
-            MouseController(backend=FakeBackend()), click_xy=(1, 1), key="f2"
-        )
+        RestartGameTool(MouseController(backend=FakeBackend()), click_xy=(1, 1), key="f2")

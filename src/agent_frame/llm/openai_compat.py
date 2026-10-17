@@ -29,9 +29,7 @@ class OpenAICompatProvider:
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings = settings or get_settings()
         if not self._settings.deepseek_api_key:
-            raise LLMError(
-                "缺少 API key：请设置环境变量 DEEPSEEK_API_KEY，或在 .env 中填写"
-            )
+            raise LLMError("缺少 API key：请设置环境变量 DEEPSEEK_API_KEY，或在 .env 中填写")
         self._client = AsyncOpenAI(
             api_key=self._settings.deepseek_api_key,
             base_url=self._settings.deepseek_base_url,
@@ -45,9 +43,7 @@ class OpenAICompatProvider:
         tools: Sequence[ToolSpec] | None = None,
     ) -> ChatResult:
         payload_tools = (
-            [{"type": "function", "function": t.model_dump()} for t in tools]
-            if tools
-            else None
+            [{"type": "function", "function": t.model_dump()} for t in tools] if tools else None
         )
         openai_messages = _to_openai_messages(messages)
         pic_dir = Path(self._settings.log_dir) / "pic"

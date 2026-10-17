@@ -16,9 +16,7 @@ class FakeLLM:
         self.calls += 1
         if self.calls == 1:
             return ChatResult(
-                tool_calls=[
-                    ToolCall(id="1", name="calculator", arguments={"expression": "2+2"})
-                ]
+                tool_calls=[ToolCall(id="1", name="calculator", arguments={"expression": "2+2"})]
             )
         return ChatResult(content="答案是 4")
 

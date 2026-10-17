@@ -54,4 +54,3 @@ def test_build_agent_assembles_without_touching_screen():
     mouse = MouseController(backend=FakeBackend())
     agent = build_agent(_config(), llm=object(), mouse=mouse, capture=cap)
     assert agent is not None
-

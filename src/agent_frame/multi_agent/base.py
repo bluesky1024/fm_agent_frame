@@ -12,7 +12,6 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 
-
 # ---------- 数据模型 ----------
 
 

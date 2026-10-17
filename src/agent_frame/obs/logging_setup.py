@@ -6,9 +6,7 @@ import logging
 from pathlib import Path
 
 
-def setup_logging(
-    log_level: str = "INFO", log_dir: str = "log", console: bool = True
-) -> None:
+def setup_logging(log_level: str = "INFO", log_dir: str = "log", console: bool = True) -> None:
     """初始化日志系统。
 
     - log_level: 日志级别（DEBUG / INFO / WARNING ...），大小写不敏感

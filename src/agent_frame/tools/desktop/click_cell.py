@@ -11,8 +11,7 @@ from agent_frame.desktop.mouse import MouseController
 class ClickCellTool:
     name: ClassVar[str] = "click_cell"
     description: ClassVar[str] = (
-        "翻开指定的格子（左键单击该格中心）。row/col 为 1 基行列号，"
-        "与棋盘截图上标注的行列号一致。"
+        "翻开指定的格子（左键单击该格中心）。row/col 为 1 基行列号，与棋盘截图上标注的行列号一致。"
     )
     parameters: ClassVar[dict[str, Any]] = {
         "type": "object",

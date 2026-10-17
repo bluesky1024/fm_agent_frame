@@ -4,9 +4,7 @@ from agent_frame.desktop.geometry import BoardGeometry
 
 
 def _geo() -> BoardGeometry:
-    return BoardGeometry(
-        origin_x=100, origin_y=200, cell_w=20, cell_h=24, rows=9, cols=9
-    )
+    return BoardGeometry(origin_x=100, origin_y=200, cell_w=20, cell_h=24, rows=9, cols=9)
 
 
 def test_cell_center_is_one_based():

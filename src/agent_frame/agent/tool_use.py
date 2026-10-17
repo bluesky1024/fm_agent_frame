@@ -59,9 +59,7 @@ class ToolUseAgent:
         messages.append(Message.user(task))
 
         # 观察帧不进历史：作为「当前帧」随每次请求临时附加
-        frame = (
-            await self._observer.observe() if self._observer is not None else None
-        )
+        frame = await self._observer.observe() if self._observer is not None else None
 
         tool_specs = self._tools.to_tool_specs()
         steps: list[AgentStep] = []
@@ -79,9 +77,7 @@ class ToolUseAgent:
                         output = await self._tools.call(tc.name, tc.arguments)
                     except Exception as exc:  # noqa: BLE001 - 工具异常回填给 LLM 让其修正
                         output = f"工具执行出错: {exc}"
-                    messages.append(
-                        Message.tool(tool_call_id=tc.id, content=output, name=tc.name)
-                    )
+                    messages.append(Message.tool(tool_call_id=tc.id, content=output, name=tc.name))
                     called.append(tc.name)
                 steps.append(AgentStep(index=index, tool_calls=called))
                 if self._observer is not None:

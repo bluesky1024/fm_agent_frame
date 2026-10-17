@@ -12,8 +12,7 @@ from agent_frame.desktop.screen import ScreenCapture
 from agent_frame.messages import Message
 
 _DEFAULT_CAPTION = (
-    "这是当前扫雷棋盘的截图，每个格子外侧已标注 1 基行列号。"
-    "请根据棋盘状态决定下一步动作。"
+    "这是当前扫雷棋盘的截图，每个格子外侧已标注 1 基行列号。请根据棋盘状态决定下一步动作。"
 )
 
 
@@ -41,9 +40,7 @@ class BoardObserver:
         img = self._capture.grab()
         img = self.annotator.draw(img)
         img = _downscale(img, self._max_px)
-        return Message.user_with_image(
-            self._caption, _to_png(img), detail=self._detail
-        )
+        return Message.user_with_image(self._caption, _to_png(img), detail=self._detail)
 
 
 def _downscale(img: Image.Image, max_px: int) -> Image.Image:

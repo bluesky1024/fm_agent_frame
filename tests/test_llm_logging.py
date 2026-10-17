@@ -63,5 +63,7 @@ async def test_request_log_saves_image_to_pic_dir(tmp_path, caplog):
     assert len(list(pic_dir.glob("*.png"))) == 1
 
     logged = "\n".join(r.message for r in caplog.records)
-    assert "/pic/" in logged  # 日志里是文件路径引用
+    # 日志是 JSON，Windows 路径中的反斜杠会被转义成 \\，统一成 / 再断言
+    normalized = logged.replace("\\\\", "/").replace("\\", "/")
+    assert "/pic/" in normalized  # 日志里是文件路径引用
     assert "data:image/png;base64" not in logged  # base64 不再进日志

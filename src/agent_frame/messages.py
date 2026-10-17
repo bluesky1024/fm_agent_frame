@@ -62,9 +62,7 @@ class Message(BaseModel):
         return cls(role="user", content=content)
 
     @classmethod
-    def user_with_image(
-        cls, text: str, png: bytes, *, detail: str = "high"
-    ) -> "Message":
+    def user_with_image(cls, text: str, png: bytes, *, detail: str = "high") -> "Message":
         """构造一条「文本 + 内联 PNG 图片」的 user 消息（base64 data URL）。"""
         data_url = "data:image/png;base64," + base64.b64encode(png).decode("ascii")
         return cls(

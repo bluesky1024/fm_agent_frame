@@ -5,9 +5,7 @@ from agent_frame.desktop.geometry import BoardGeometry
 
 
 def _geo() -> BoardGeometry:
-    return BoardGeometry(
-        origin_x=10, origin_y=10, cell_w=8, cell_h=8, rows=3, cols=3
-    )
+    return BoardGeometry(origin_x=10, origin_y=10, cell_w=8, cell_h=8, rows=3, cols=3)
 
 
 def test_draw_preserves_size_and_mode():

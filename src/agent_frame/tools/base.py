@@ -28,6 +28,4 @@ class Tool(Protocol):
 
 def to_tool_spec(tool: Tool) -> ToolSpec:
     """把一个 Tool 转成给 LLM 描述的 ToolSpec。"""
-    return ToolSpec(
-        name=tool.name, description=tool.description, parameters=tool.parameters
-    )
+    return ToolSpec(name=tool.name, description=tool.description, parameters=tool.parameters)

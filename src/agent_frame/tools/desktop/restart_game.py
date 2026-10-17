@@ -11,8 +11,7 @@ from agent_frame.errors import ToolError
 class RestartGameTool:
     name: ClassVar[str] = "restart_game"
     description: ClassVar[str] = (
-        "当本局已经结束（胜利，或踩到雷）时调用，重开一局新游戏。"
-        "棋盘未结束时不要调用。"
+        "当本局已经结束（胜利，或踩到雷）时调用，重开一局新游戏。棋盘未结束时不要调用。"
     )
     parameters: ClassVar[dict[str, Any]] = {"type": "object", "properties": {}}
 

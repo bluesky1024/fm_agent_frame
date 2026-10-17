@@ -58,10 +58,7 @@ def test_same_image_deduped_to_one_file(tmp_path):
     pic_dir = tmp_path / "pic"
     out = save_images_and_strip([_image_message(), _image_message()], pic_dir)
     assert len(list(pic_dir.glob("*.png"))) == 1
-    assert (
-        out[0]["content"][1]["image_url"]["url"]
-        == out[1]["content"][1]["image_url"]["url"]
-    )
+    assert out[0]["content"][1]["image_url"]["url"] == out[1]["content"][1]["image_url"]["url"]
 
 
 def test_different_images_saved_separately_in_order(tmp_path):

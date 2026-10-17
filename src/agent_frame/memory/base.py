@@ -21,7 +21,6 @@ from pydantic import BaseModel, Field
 
 from agent_frame.messages import Message
 
-
 # ---------- 短期对话记忆 ----------
 
 
@@ -126,9 +125,7 @@ class EpisodicMemory(Protocol):
         """记录一个事件。"""
         ...
 
-    async def query(
-        self, *, since: float | None = None, top_k: int = 10
-    ) -> list[Episode]:
+    async def query(self, *, since: float | None = None, top_k: int = 10) -> list[Episode]:
         """回溯事件：可按 since（Unix 时间戳）过滤，返回 top_k 条。"""
         ...
 

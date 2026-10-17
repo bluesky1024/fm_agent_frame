@@ -17,7 +17,6 @@ from pydantic import BaseModel, Field
 
 from agent_frame.messages import Message
 
-
 # ---------- 模板渲染 ----------
 
 
@@ -108,6 +107,4 @@ class StringTemplatePrompt:
         return self._template.safe_substitute(**self._partials, **variables)
 
     def partial(self, **variables: Any) -> "StringTemplatePrompt":
-        return StringTemplatePrompt(
-            self._template.template, **{**self._partials, **variables}
-        )
+        return StringTemplatePrompt(self._template.template, **{**self._partials, **variables})

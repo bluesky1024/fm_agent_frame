@@ -19,7 +19,7 @@
 
 工具链：
 
-- 本地引入 `ruff`（lint + format）、`mypy`（`core`/`runtime`/`llm`/`tools` 严格）、`import-linter`（依赖规则）。
+- 本地引入 `ruff`（lint + format）、`mypy`（P0 起 `core`/`runtime` 严格，`llm`/`tools` 随票 02/03 纳入）、`import-linter`（依赖规则）。
 - 统一由 `scripts/check.py` 执行，Windows 与 macOS 命令一致。
 - **暂不启用 GitHub Actions**；后续需要时复用同一组命令即可。
 - 真实 API 人工验收安排在"基本完备版本"达成后，不作为每阶段门槛。

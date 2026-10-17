@@ -1,8 +1,6 @@
 import base64
 import io
 
-from PIL import Image
-
 from games.minesweeper import (
     CELL,
     COLS,
@@ -15,6 +13,7 @@ from games.minesweeper import (
     MinesweeperBoard,
     board_config,
 )
+from PIL import Image
 
 
 def test_first_reveal_never_hits_mine():
@@ -101,7 +100,5 @@ async def test_annotated_frame_contains_row_col_labels():
     png = base64.b64decode(data_url.split(",", 1)[1])
     img = Image.open(io.BytesIO(png)).convert("RGB")
     # 蓝色行列标尺应出现在图内（抗锯齿，用偏蓝判据）
-    bluish = sum(
-        1 for (r, g, b) in img.getdata() if b > 80 and b > r + 30 and b > g + 30
-    )
+    bluish = sum(1 for (r, g, b) in img.getdata() if b > 80 and b > r + 30 and b > g + 30)
     assert bluish > 0

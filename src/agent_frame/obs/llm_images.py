@@ -46,7 +46,7 @@ def save_images_and_strip(messages: list[dict], pic_dir: Path) -> list[dict]:
             url = image_url.get("url")
             if not isinstance(url, str) or not url.startswith(_DATA_PREFIX):
                 continue
-            png = base64.b64decode(url[len(_DATA_PREFIX):])
+            png = base64.b64decode(url[len(_DATA_PREFIX) :])
             digest = hashlib.sha1(png).hexdigest()[:12]
             key = (str(pic_dir), digest)
             if key not in _saved:

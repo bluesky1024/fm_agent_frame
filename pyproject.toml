@@ -16,7 +16,14 @@ dependencies = [
 [project.optional-dependencies]
 server = ["fastapi>=0.110", "uvicorn>=0.29"]
 desktop = ["pyautogui>=0.9.54", "pillow>=10.0", "mss>=9.0"]
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "pillow>=10.0"]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pillow>=10.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "import-linter>=2.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -24,3 +31,96 @@ where = ["src"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 pythonpath = ["src", "."]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+# games/ 是被框架操作的目标程序，保持不变（ADR-0006）
+# docs/ 中的 Python 代码块是教学示例，不参与自动格式化
+extend-exclude = ["games", "docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.mypy]
+python_version = "3.12"
+# llm 与 tools 在票 02/03 重构后再纳入检查并收紧为 strict
+files = [
+    "src/agent_frame/core",
+    "src/agent_frame/runtime",
+]
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# llm 与 tools 在票 02/03 重构后再收紧为 strict
+module = ["agent_frame.core.*", "agent_frame.runtime.*"]
+strict = true
+
+[tool.importlinter]
+root_package = "agent_frame"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "分层架构：上层依赖下层"
+type = "layers"
+layers = [
+    "agent_frame.interfaces",
+    "agent_frame.capabilities",
+    "agent_frame.runtime",
+    "agent_frame.context",
+    "agent_frame.llm | agent_frame.tools | agent_frame.memory",
+    "agent_frame.obs",
+    "agent_frame.core",
+]
+ignore_imports = [
+    # 遗留违规，票 03 重构工具层时移除
+    "agent_frame.tools.base -> agent_frame.llm.base",
+    "agent_frame.tools.registry -> agent_frame.llm.base",
+]
+
+[[tool.importlinter.contracts]]
+name = "core 不依赖任何内部模块"
+type = "forbidden"
+source_modules = ["agent_frame.core"]
+forbidden_modules = [
+    "agent_frame.llm",
+    "agent_frame.tools",
+    "agent_frame.memory",
+    "agent_frame.obs",
+    "agent_frame.context",
+    "agent_frame.runtime",
+    "agent_frame.capabilities",
+    "agent_frame.interfaces",
+    "agent_frame.agent",
+    "agent_frame.prompt",
+    "agent_frame.server",
+    "agent_frame.desktop",
+    "agent_frame.retrieval",
+    "agent_frame.multi_agent",
+    "agent_frame.eval",
+]
+
+[[tool.importlinter.contracts]]
+name = "tools 不依赖 llm"
+type = "forbidden"
+source_modules = ["agent_frame.tools"]
+forbidden_modules = ["agent_frame.llm"]
+ignore_imports = [
+    # 遗留违规，票 03 重构工具层时移除
+    "agent_frame.tools.base -> agent_frame.llm.base",
+    "agent_frame.tools.registry -> agent_frame.llm.base",
+]
+
+[[tool.importlinter.contracts]]
+name = "capabilities 不依赖 interfaces"
+type = "forbidden"
+source_modules = ["agent_frame.capabilities"]
+forbidden_modules = ["agent_frame.interfaces"]
+
+[[tool.importlinter.contracts]]
+name = "框架不依赖应用、示例与目标程序"
+type = "forbidden"
+source_modules = ["agent_frame"]
+forbidden_modules = ["apps", "examples", "games"]

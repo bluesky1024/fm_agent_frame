@@ -15,7 +15,6 @@ from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 
-
 # ---------- 数据模型 ----------
 
 
@@ -71,9 +70,7 @@ class Embedder(Protocol):
 class VectorStore(Protocol):
     """向量存储：写入向量块，支持相似度检索与元数据过滤。"""
 
-    async def add(
-        self, chunks: Sequence[Chunk], embeddings: Sequence[list[float]]
-    ) -> None: ...
+    async def add(self, chunks: Sequence[Chunk], embeddings: Sequence[list[float]]) -> None: ...
 
     async def search(
         self,

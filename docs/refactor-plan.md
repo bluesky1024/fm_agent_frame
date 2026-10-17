@@ -27,15 +27,16 @@ pip install -e ".[dev,desktop,server]"
 ```text
 python -m ruff check .
 python -m ruff format --check .
-python -m mypy src/agent_frame/core src/agent_frame/runtime \
-                 src/agent_frame/llm src/agent_frame/tools
+python -m mypy
 lint-imports
 python -m pytest
 ```
 
+`python scripts/check.py` 会按上述顺序执行，并自动定位 `lint-imports`。`games/` 是目标程序，排除在 ruff 之外。
+
 不启用 GitHub Actions；在本地与需要时手动执行。后续若需要 CI，直接复用以上命令。
 
-mypy 严格模式仅覆盖 `core`、`runtime`、`llm`、`tools` 四个包，其余包首版宽松。
+mypy 严格模式在 P0 覆盖 `core` 与 `runtime`；`llm` 与 `tools` 随票 02/03 重构后纳入严格检查。其余包首版宽松。
 
 ## P0 基线
 
@@ -44,7 +45,7 @@ mypy 严格模式仅覆盖 `core`、`runtime`、`llm`、`tools` 四个包，其�
 - [ ] 在 `pyproject.toml` 增加 `ruff`、`mypy`、`import-linter` 开发依赖与配置。
 - [ ] 配置 import-linter 契约：分层依赖、禁止反向依赖、禁止 `tools → llm`。
 - [ ] 新增 `scripts/check.py`。
-- [ ] 记录基线：运行现有 `pytest`，确认 74 个用例全绿。
+- [ ] 记录基线：运行现有 `pytest`，确认全绿（当前 78 个用例，含修复后的 Windows 路径断言）。
 
 **验收**：`python scripts/check.py` 通过；旧 examples 行为不变。
 
@@ -114,7 +115,7 @@ mypy 严格模式仅覆盖 `core`、`runtime`、`llm`、`tools` 四个包，其�
 
 1. `pytest` 全绿，包含 fake LLM 的扫雷 e2e。
 2. `examples/01–04` 全部可运行（01–03 不依赖真实 API 的 fake 变体或真实 API 均可）。
-3. `ruff`、`mypy`（四个核心包）、`import-linter` 全部通过。
+3. `ruff`、`mypy`、`import-linter` 全部通过。
 4. 每个能力模块有最小实现或空实现，且在 runtime/context/session 链路中真实接线。
 5. 事件流、trace 文件、token 统计在示例中可见。
 6. 旧路径已删除，README 与目录结构一致。

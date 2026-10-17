@@ -7,15 +7,11 @@ from agent_frame.desktop.screen import CaptureRegion, ScreenCapture
 
 def _capture(left=0, top=0, w=200, h=200) -> ScreenCapture:
     region = CaptureRegion(left=left, top=top, width=w, height=h)
-    return ScreenCapture(
-        region, grabber=lambda r: Image.new("RGB", (r.width, r.height), "white")
-    )
+    return ScreenCapture(region, grabber=lambda r: Image.new("RGB", (r.width, r.height), "white"))
 
 
 def _geo(origin_x=20, origin_y=20) -> BoardGeometry:
-    return BoardGeometry(
-        origin_x=origin_x, origin_y=origin_y, cell_w=10, cell_h=10, rows=9, cols=9
-    )
+    return BoardGeometry(origin_x=origin_x, origin_y=origin_y, cell_w=10, cell_h=10, rows=9, cols=9)
 
 
 async def test_observe_returns_image_user_message():

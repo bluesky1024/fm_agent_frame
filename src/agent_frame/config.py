@@ -10,9 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """应用配置。字段名自动映射为环境变量（大小写不敏感）。"""
 
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # DeepSeek（OpenAI 兼容）
     deepseek_api_key: str | None = None

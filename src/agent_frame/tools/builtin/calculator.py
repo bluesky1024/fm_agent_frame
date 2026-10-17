@@ -25,9 +25,7 @@ _UNARY_OPS: dict[type, Any] = {
 
 class CalculatorTool:
     name: ClassVar[str] = "calculator"
-    description: ClassVar[str] = (
-        "计算一个数学表达式，如 '2 + 3 * 4'。支持 + - * / % ** 和括号。"
-    )
+    description: ClassVar[str] = "计算一个数学表达式，如 '2 + 3 * 4'。支持 + - * / % ** 和括号。"
     parameters: ClassVar[dict[str, Any]] = {
         "type": "object",
         "properties": {

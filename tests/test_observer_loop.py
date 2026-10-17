@@ -22,9 +22,7 @@ class OneToolThenTextLLM:
         self.calls.append(list(messages))
         if len(self.calls) == 1:
             return ChatResult(
-                tool_calls=[
-                    ToolCall(id="1", name="calculator", arguments={"expression": "2+2"})
-                ]
+                tool_calls=[ToolCall(id="1", name="calculator", arguments={"expression": "2+2"})]
             )
         return ChatResult(content="done")
 
