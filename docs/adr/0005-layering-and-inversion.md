@@ -17,8 +17,7 @@ interfaces
 capabilities
 runtime
 context
-llm · tools · memory
-obs
+llm · tools · memory · obs
 core
 ```
 

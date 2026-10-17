@@ -8,6 +8,7 @@
 - spec 为 `.scratch/<feature-slug>/spec.md`
 - 实现 issue 每个 ticket 一个文件：`.scratch/<feature-slug>/issues/<NN>-<slug>.md`，从 `01` 开始编号，绝不使用单个合并的 tickets 文件
 - triage 状态记录在每个 issue 文件顶部的 `Status:` 行（角色字符串见 `triage-labels.md`）
+- 实现完成后把 `Status:` 设为 `done`（实现完成状态，不属于 triage 词表）
 - 评论与对话历史追加到文件底部的 `## Comments` 标题下
 
 ## 当 skill 要求 "publish to the issue tracker" 时

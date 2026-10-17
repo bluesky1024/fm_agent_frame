@@ -2,6 +2,7 @@
 
 > 依据：[目标架构](./architecture.md)、`docs/adr/`。
 > 原则：每个阶段结束时仓库可运行、`pytest` 全绿；扫雷在 P0–P3 允许离线，P4 恢复；不保留旧 API 兼容层。
+> 实施状态以 `.scratch/agent-architecture-refactor/issues/` 中的票为准；本计划的勾选项仅表示阶段任务清单。
 
 ## 阶段总览
 
@@ -45,7 +46,7 @@ mypy 严格模式在 P0 覆盖 `core` 与 `runtime`；`llm` 与 `tools` 随票 0
 - [ ] 在 `pyproject.toml` 增加 `ruff`、`mypy`、`import-linter` 开发依赖与配置。
 - [ ] 配置 import-linter 契约：分层依赖、禁止反向依赖、禁止 `tools → llm`。
 - [ ] 新增 `scripts/check.py`。
-- [ ] 记录基线：运行现有 `pytest`，确认全绿（当前 78 个用例，含修复后的 Windows 路径断言）。
+- [ ] 记录基线：既有 65 个用例在修复 Windows 路径断言后全绿；本票新增 13 个骨架用例，共 78 个。
 
 **验收**：`python scripts/check.py` 通过；旧 examples 行为不变。
 

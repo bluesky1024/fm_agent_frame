@@ -18,12 +18,11 @@
 ```
 L5  interfaces      Session · SessionManager · CLI · HTTP server
 L4  capabilities    retrieval · multi_agent · guardrails · hitl
-                    mcp · sandbox · computer_use
+                    mcp · sandbox · computer_use · eval
 L3  runtime         AgentRuntime · AgentSpec · Middleware · 扩展协议
 L2  context         ContextBuilder · Compaction · ContextProvider 协议
-L1  llm · tools · memory
-L0  obs             trace · token · logging · llm_images（交叉切面）
-    core            messages · events · errors · config · 共享类型
+L1  llm · tools · memory · obs
+L0  core            messages · events · errors · config · 共享类型
 ```
 
 上层依赖下层。**依赖倒置**：`runtime` 定义钩子与策略协议，`capabilities` 实现它们；`context` 定义 `ContextProvider`，`retrieval` 实现它。因此能力层可以依赖运行时，而运行时不依赖任何具体能力。
@@ -93,11 +92,10 @@ examples/                  # 01 基础对话 / 02 工具 / 03 多轮 / 04 扫雷
 | 包 | 允许依赖 |
 |---|---|
 | `core` | 仅标准库与第三方库 |
-| `llm` / `tools` / `memory` | `core`、`obs` |
-| `obs` | `core` |
+| `llm` / `tools` / `memory` / `obs` | `core` |
 | `context` | `core`、`memory` |
 | `runtime` | `core`、`llm`、`tools`、`memory`、`obs`、`context` |
-| `capabilities.*` | 以上全部（用于实现协议、编排流程） |
+| `capabilities.*` / `eval` | 以上全部（用于实现协议、编排与评测流程） |
 | `interfaces` | 以上全部 |
 | `apps` / `examples` | `agent_frame` 任意公开模块 |
 

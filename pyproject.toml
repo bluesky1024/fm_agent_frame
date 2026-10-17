@@ -67,14 +67,15 @@ name = "分层架构：上层依赖下层"
 type = "layers"
 layers = [
     "agent_frame.interfaces",
-    "agent_frame.capabilities",
+    "agent_frame.capabilities | agent_frame.eval",
     "agent_frame.runtime",
     "agent_frame.context",
-    "agent_frame.llm | agent_frame.tools | agent_frame.memory",
-    "agent_frame.obs",
+    "agent_frame.llm | agent_frame.tools | agent_frame.memory | agent_frame.obs",
     "agent_frame.core",
 ]
 ignore_imports = [
+    # 遗留违规，票 02 重构 LLM 层时移除
+    "agent_frame.llm.openai_compat -> agent_frame.obs.llm_images",
     # 遗留违规，票 03 重构工具层时移除
     "agent_frame.tools.base -> agent_frame.llm.base",
     "agent_frame.tools.registry -> agent_frame.llm.base",

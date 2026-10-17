@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import sysconfig
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,7 +18,8 @@ def lint_imports_command() -> list[str]:
     if executable:
         return [executable]
 
-    scripts_dir = Path(sys.executable).parent / ("Scripts" if os.name == "nt" else "bin")
+    scripts_path = sysconfig.get_path("scripts")
+    scripts_dir = Path(scripts_path) if scripts_path else Path(sys.executable).parent
     for name in ("lint-imports.exe", "lint-imports"):
         candidate = scripts_dir / name
         if candidate.exists():
