@@ -9,7 +9,15 @@ import pytest
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
 
-@pytest.mark.parametrize("filename", ["01_hello_llm.py", "02_tool_agent.py", "03_interactive.py"])
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "01_hello_llm.py",
+        "02_tool_agent.py",
+        "03_interactive.py",
+        "04_minesweeper_autoplay.py",
+    ],
+)
 def test_example_imports_and_has_main(filename: str, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.syspath_prepend(str(EXAMPLES))
     module_name = f"example_{filename.removesuffix('.py')}"

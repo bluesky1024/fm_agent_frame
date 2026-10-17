@@ -2,7 +2,7 @@
 
 > 依据：[目标架构](./architecture.md)、`docs/adr/`。
 > 原则：每个阶段结束时仓库可运行、`pytest` 全绿；扫雷在 P0–P3 允许离线，P4 恢复；不保留旧 API 兼容层。
-> 实施状态以 `.scratch/agent-architecture-refactor/issues/` 中的票为准；本计划的勾选项仅表示阶段任务清单。
+> **状态：P0–P5 已全部完成（2026-10-17）**。实施细节见 `.scratch/agent-architecture-refactor/issues/`。
 
 ## 阶段总览
 
@@ -37,76 +37,76 @@ python -m pytest
 
 不启用 GitHub Actions；在本地与需要时手动执行。后续若需要 CI，直接复用以上命令。
 
-mypy 严格模式在 P0 覆盖 `core` 与 `runtime`；`llm` 与 `tools` 随票 02/03 重构后纳入严格检查。其余包首版宽松。
+mypy 严格模式最终覆盖核心四包 `core` / `llm` / `tools` / `runtime`；其余包首版宽松。
 
 ## P0 基线
 
-- [ ] 创建 `docs/architecture.md`、`docs/refactor-plan.md`、`docs/adr/0001–0007`。
-- [ ] 创建新包骨架（仅 `__init__.py`），旧代码保持原位。
-- [ ] 在 `pyproject.toml` 增加 `ruff`、`mypy`、`import-linter` 开发依赖与配置。
-- [ ] 配置 import-linter 契约：分层依赖、禁止反向依赖、禁止 `tools → llm`。
-- [ ] 新增 `scripts/check.py`。
-- [ ] 记录基线：既有 65 个用例在修复 Windows 路径断言后全绿；本票新增 13 个骨架用例，共 78 个。
+- [x] 创建 `docs/architecture.md`、`docs/refactor-plan.md`、`docs/adr/0001–0007`。
+- [x] 创建新包骨架（仅 `__init__.py`），旧代码保持原位。
+- [x] 在 `pyproject.toml` 增加 `ruff`、`mypy`、`import-linter` 开发依赖与配置。
+- [x] 配置 import-linter 契约：分层依赖、禁止反向依赖、禁止 `tools → llm`。
+- [x] 新增 `scripts/check.py`。
+- [x] 记录基线：既有 65 个用例在修复 Windows 路径断言后全绿；本票新增 13 个骨架用例，共 78 个。
 
 **验收**：`python scripts/check.py` 通过；旧 examples 行为不变。
 
 ## P1 内核
 
-- [ ] `core/messages.py`、`core/errors.py`、`core/config.py` 从旧模块迁移；新增 `core/events.py`、`core/types.py`。
-- [ ] `llm/base.py` 定义 `chat()` 与 `stream()`；`openai_compat.py` 实现流式、用量提取、重试配置。
-- [ ] `tools/base.py` 定义自包含 `ToolSpec` / `ToolResult` / `ToolProvider` / `ToolSandbox`；删除对 `llm` 的依赖。
-- [ ] `tools/registry.py` 与 `tools/executor.py`：JSON Schema 校验、同批工具并行、超时、错误分类。
-- [ ] `tools/builtin/` 迁移 calculator、time。
-- [ ] `runtime/spec.py`、`runtime/session.py`（协议）、`runtime/policies.py`、`runtime/runtime.py`：事件流、步骤控制、中间件、取消、步数上限。
-- [ ] 重写 `examples/01_basic_chat.py`、`02_tool_agent.py`、`03_interactive.py`。
-- [ ] 新增/重写测试：消息、流式分片组装、工具校验与并行、runtime 事件序列。
+- [x] `core/messages.py`、`core/errors.py`、`core/config.py` 从旧模块迁移；新增 `core/events.py`、`core/types.py`。
+- [x] `llm/base.py` 定义 `chat()` 与 `stream()`；`openai_compat.py` 实现流式、用量提取、重试配置。
+- [x] `tools/base.py` 定义自包含 `ToolSpec` / `ToolResult` / `ToolProvider` / `ToolSandbox`；删除对 `llm` 的依赖。
+- [x] `tools/registry.py` 与 `tools/executor.py`：JSON Schema 校验、同批工具并行、超时、错误分类。
+- [x] `tools/builtin/` 迁移 calculator、time。
+- [x] `runtime/spec.py`、`runtime/session.py`（协议）、`runtime/policies.py`、`runtime/runtime.py`：事件流、步骤控制、中间件、取消、步数上限。
+- [x] 重写 `examples/01_hello_llm.py`、`02_tool_agent.py`、`03_interactive.py`。
+- [x] 新增/重写测试：消息、流式分片组装、工具校验与并行、runtime 事件序列。
 
 **验收**：核心四包类型检查通过；无 `tools → llm` 依赖；examples 01–03 可跑；测试全绿。
 
 ## P2 上下文与会话
 
-- [ ] `context/providers.py` 定义 `ContextProvider`；`context/builder.py` 负责每轮装配；`context/compaction.py` 负责 token 预算。
-- [ ] `memory/conversation.py` 迁移并适配新消息模型；`memory/summary_buffer.py` 实现摘要 + 滑动窗口。
-- [ ] `interfaces/session.py` 实现 `Session` 与 `SessionManager`。
-- [ ] 修复 system prompt 重复写入历史的问题。
-- [ ] 修复工具轮 assistant 文本被丢弃的问题。
-- [ ] 工具失败结果写入历史。
-- [ ] 测试：装配不落盘、工具轮文本保留、压缩触发、多轮会话隔离。
+- [x] `context/providers.py` 定义 `ContextProvider`；`context/builder.py` 负责每轮装配；`context/compaction.py` 负责 token 预算。
+- [x] `memory/conversation.py` 迁移并适配新消息模型；`memory/summary_buffer.py` 实现摘要 + 滑动窗口。
+- [x] `interfaces/session.py` 实现 `Session` 与 `SessionManager`。
+- [x] 修复 system prompt 重复写入历史的问题。
+- [x] 修复工具轮 assistant 文本被丢弃的问题。
+- [x] 工具失败结果写入历史。
+- [x] 测试：装配不落盘、工具轮文本保留、压缩触发、多轮会话隔离。
 
 **验收**：上述测试通过；03 多轮对话可用；历史记录中不再出现重复 system 消息。
 
 ## P3 能力层
 
-- [ ] `obs/tracer.py`：`Tracer` 协议、`ConsoleTracer`、`JSONLTracer`；在 runtime 中接线。
-- [ ] `obs/token.py`：按事件累计 token 与耗时。
-- [ ] `capabilities/retrieval`：Loader → Chunker → Embedder → VectorStore → Retriever → Reranker；首版内存实现与确定性假 embedder，实现 `ContextProvider`。
-- [ ] `capabilities/multi_agent`：`SubTask`、`TaskDecomposer` 协议、`SequentialOrchestrator` 最小实现。
-- [ ] `capabilities/guardrails`：输入/输出护栏协议与空实现，接入 runtime。
-- [ ] `capabilities/hitl`：`AutoApprove` 与 `ConsoleApprove`，接入工具执行前审批。
-- [ ] `capabilities/mcp`、`capabilities/sandbox`：协议 + no-op 实现，接入 `ToolProvider` / `ToolExecutor`。
-- [ ] `eval/`：精确匹配、正则匹配、批量报告。
-- [ ] `interfaces/server/`：单聊天端点 + SSE 流式输出 + 多会话。
-- [ ] 每个能力至少一个最小闭环测试。
+- [x] `obs/tracer.py`：`Tracer` 协议、`ConsoleTracer`、`JSONLTracer`；在 runtime 中接线。
+- [x] `obs/token.py`：按事件累计 token 与耗时。
+- [x] `capabilities/retrieval`：Loader → Chunker → Embedder → VectorStore → Retriever → Reranker；首版内存实现与确定性假 embedder，实现 `ContextProvider`。
+- [x] `capabilities/multi_agent`：`SubTask`、`TaskDecomposer` 协议、`SequentialOrchestrator` 最小实现。
+- [x] `capabilities/guardrails`：输入/输出护栏协议与空实现，接入 runtime。
+- [x] `capabilities/hitl`：`AutoApprove` 与 `ConsoleApprove`，接入工具执行前审批。
+- [x] `capabilities/mcp`、`capabilities/sandbox`：协议 + no-op 实现，接入 `ToolProvider` / `ToolExecutor`。
+- [x] `eval/`：精确匹配、正则匹配、批量报告。
+- [x] `interfaces/server/`：单聊天端点 + SSE 流式输出 + 多会话。
+- [x] 每个能力至少一个最小闭环测试。
 
 **验收**：trace 文件产生；eval 能对 fake LLM 跑批并输出报告；no-op 能力不改变主流程行为；检索结果出现在装配消息中。
 
 ## P4 计算机使用与应用
 
-- [ ] `desktop/` 的 screen、mouse、observer、annotate 迁入 `capabilities/computer_use/`；同步调用改为 `asyncio.to_thread`。
-- [ ] 新建 `apps/minesweeper/`：棋盘几何、点击/插旗/重开工具、提示词、启动器、应用配置。
-- [ ] 删除 `desktop/minesweeper.py` 与 `tools/desktop/` 的旧路径，消除循环导入。
-- [ ] 新增 fake-LLM 的扫雷全流程 e2e 测试：启动 → 截屏 → 工具调用 → 状态推进 → 结束。
-- [ ] 更新 `examples/04_minesweeper_autoplay.py` 指向 `apps/minesweeper`。
+- [x] 通用截屏、鼠标、观察、标注已位于 `capabilities/computer_use/`；同步调用全部改为 `asyncio.to_thread`。
+- [x] 已新建 `apps/minesweeper/`：棋盘几何、点击/插旗/重开工具、提示词、启动器、应用配置。
+- [x] 旧桌面模块路径已删除，循环导入消失。
+- [x] 新增 fake-LLM 的扫雷全流程 e2e 测试：启动 → 截屏 → 工具调用 → 状态推进 → 结束。
+- [x] 更新 `examples/04_minesweeper_autoplay.py` 指向 `apps/minesweeper`。
 
 **验收**：e2e 测试通过；import-linter 全绿；`games/minesweeper.py` 未被修改。
 
 ## P5 收尾
 
-- [ ] 重写 `README.md` 与 `docs/roadmap.md`，与最终目录一致。
-- [ ] 更新 `docs/architecture.md` 的模块深度与协议细节。
-- [ ] 补充 ADR（如实施中出现新的关键取舍）。
-- [ ] 运行 `scripts/check.py` 全套检查。
-- [ ] 清理旧模块、旧示例路径与失效文档引用。
+- [x] 重写 `README.md` 与 `docs/roadmap.md`，与最终目录一致。
+- [x] 更新 `docs/architecture.md` 的模块深度与协议细节。
+- [x] 补充 ADR（如实施中出现新的关键取舍）。
+- [x] 运行 `scripts/check.py` 全套检查。
+- [x] 清理旧模块、旧示例路径与失效文档引用。
 
 **验收**：达到下方"基本完备版本"定义。
 
@@ -122,6 +122,8 @@ mypy 严格模式在 P0 覆盖 `core` 与 `runtime`；`llm` 与 `tools` 随票 0
 6. 旧路径已删除，README 与目录结构一致。
 
 ## 人工验收清单（真实 API，重构完成后）
+
+以下步骤不在本次自动实现范围内，待人工执行（详见 [acceptance.md](./acceptance.md)）。
 
 - [ ] `examples/02_tool_agent.py`：工具调用与流式输出正常。
 - [ ] `examples/03_interactive.py`：多轮对话，历史正确、无重复 system。

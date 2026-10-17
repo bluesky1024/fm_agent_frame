@@ -11,13 +11,14 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 
 from _events import run_and_print
 
 from agent_frame.core.config import get_settings
 from agent_frame.interfaces.session import InMemorySession
 from agent_frame.llm import OpenAICompatProvider
-from agent_frame.obs import setup_logging
+from agent_frame.obs import JSONLTracer, setup_logging
 from agent_frame.runtime import AgentRuntime, AgentSpec
 from agent_frame.tools.builtin import CalculatorTool, CurrentTimeTool
 
@@ -38,6 +39,7 @@ async def main() -> None:
         tools=[CalculatorTool(), CurrentTimeTool()],
         max_steps=settings.max_steps,
         tool_timeout=settings.tool_timeout,
+        tracers=[JSONLTracer(Path(settings.log_dir) / "trace.jsonl")],
     )
     runtime = AgentRuntime()
     session = InMemorySession(id="tool-agent")

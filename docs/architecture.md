@@ -36,7 +36,9 @@ src/agent_frame/
 │   ├── events.py          # AgentEvent 及全部事件类型
 │   ├── errors.py          # 统一异常体系（可重试 / 致命 / 工具 / 护栏 / 取消）
 │   ├── config.py          # pydantic-settings，env/.env 分层配置
-│   └── types.py           # IDs、TokenUsage、元数据类型
+│   ├── images.py          # 请求内联图片落盘（llm 与 obs 共用）
+│   ├── tokens.py          # 粗略 token 估算
+│   └── types.py           # ToolSpec、TokenUsage、AgentResult
 ├── llm/
 │   ├── base.py            # LLMProvider 协议：chat() / stream()
 │   └── openai_compat.py   # OpenAI 兼容实现（DeepSeek），流式、用量、重试
@@ -53,7 +55,7 @@ src/agent_frame/
 │   ├── tracer.py          # Tracer 协议、ConsoleTracer、JSONLTracer
 │   ├── token.py           # token / 成本统计
 │   ├── logging_setup.py   # 运行日志双路输出
-│   └── llm_images.py      # 多模态请求中图片落盘
+│   └── llm_images.py      # 历史导入名，指向 core/images.py
 ├── context/
 │   ├── providers.py       # ContextProvider 协议（记忆召回、检索、用户画像…）
 │   ├── builder.py         # 每轮消息装配
@@ -85,7 +87,7 @@ games/minesweeper.py       # 被操作的目标程序，保持不变
 examples/                  # 01 基础对话 / 02 工具 / 03 多轮 / 04 扫雷
 ```
 
-**旧模块去向**：`agent/` → `runtime/`；`prompt/` → `context/`；`server/` → `interfaces/server/`；`desktop/` → `capabilities/computer_use/`；`tools/desktop/` 与扫雷棋盘逻辑 → `apps/minesweeper/`。不保留兼容路径。
+**旧路径已删除**：重构不保留兼容层。循环引擎统一在 `runtime/`，请求装配统一在 `context/`，服务在 `interfaces/server/`，通用桌面能力在 `capabilities/computer_use/`，扫雷应用在 `apps/minesweeper/`。
 
 ## 4. 依赖规则
 
@@ -210,7 +212,7 @@ AgentRuntime.run(spec, session, input) ── emit RunStart
 | `llm` | 供应商协议、OpenAI 兼容、流式、用量、重试 | 完整 |
 | `tools` | 协议自包含、注册、校验、并行、超时、错误分类 | 完整（沙箱/MCP 仅协议） |
 | `runtime` | 循环、步骤控制、中间件、审批、事件、取消 | 完整 |
-| `context` | 每轮装配、token 预算、压缩 | 完整（首版摘要压缩） |
+| `context` | 每轮装配、token 预算、压缩 | 完整（首版确定性摘要 + 滑动窗口） |
 | `memory` | 会话历史、摘要滑窗、长期记忆协议 | 短时完整；长期仅协议 |
 | `obs` | 事件消费者、Console/JSONL trace、token 统计 | 最小闭环 |
 | `capabilities/retrieval` | RAG 流水线 | 最小闭环（内存向量库 + 确定性假 embedder） |
@@ -247,18 +249,20 @@ AgentRuntime.run(spec, session, input) ── emit RunStart
 - 不做前端 UI；`interfaces/server` 只提供最小 HTTP/SSE 能力。
 - 不保留旧 API 兼容层；examples 与测试随重构同步更新。
 
-## 11. 与现状的主要差异
+## 11. 重构前问题与当前方案
 
-| 现状问题 | 目标方案 |
+以下问题均已在本次重构中解决：
+
+| 重构前问题 | 当前方案 |
 |---|---|
-| `agent/tool_use.py` 同时承担定义与循环 | `AgentSpec` 与 `AgentRuntime` 分离 |
-| `tools/base.py` 反向依赖 `llm/base.py` | `ToolSpec` 自包含，`tools` 只依赖 `core` |
-| `desktop` 与 `tools/desktop` 循环导入 | 通用能力入 `capabilities/computer_use`，应用逻辑入 `apps/` |
-| system prompt 每轮注入历史（`tool_use.py:55-58,96`） | 由 `context` 装配，不写回历史 |
-| 工具轮丢弃 assistant 文本（`tool_use.py:75`） | 完整保存 assistant 消息 |
+| 循环与 Agent 定义混在一个类里 | `AgentSpec` 与 `AgentRuntime` 分离 |
+| 工具层反向依赖 LLM 层 | `ToolSpec` 自包含，`tools` 只依赖 `core` |
+| 桌面能力与应用逻辑混在框架内并循环导入 | 通用能力入 `capabilities/computer_use`，应用逻辑入 `apps/` |
+| system prompt 每轮写入历史 | 由 `context` 装配，不写回历史 |
+| 工具轮丢弃 assistant 文本 | 完整保存 assistant 消息 |
 | 工具串行、无校验、无超时 | `ToolExecutor` 校验 + 并行 + 超时 + 错误分类 |
-| 无流式（`llm/base.py` 整包返回） | `LLMProvider.stream()` + 事件流 |
-| 配置散落、扫雷裸 dict、硬编码 max_steps | 统一 `core/config.py`，应用配置显式传入 |
-| `ConsoleTracer` 未接线 | 事件流驱动的 Tracer 真实接线 |
+| 无流式 | `LLMProvider.stream()` + 事件流 |
+| 配置散落、应用使用裸 dict | 统一 `core/config.py`，应用配置显式传入 |
+| Tracer 未接线 | 事件流驱动的 Tracer 真实接线 |
 | 同步阻塞调用混入 async | `asyncio.to_thread` 隔离 |
 | 无依赖方向守护 | import-linter + 本地检查脚本 |
