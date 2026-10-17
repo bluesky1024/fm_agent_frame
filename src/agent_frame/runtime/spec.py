@@ -13,6 +13,7 @@ from typing import Any
 from agent_frame.context.providers import ContextProvider
 from agent_frame.llm.base import LLMProvider
 from agent_frame.memory.base import Memory
+from agent_frame.obs.tracer import Tracer
 from agent_frame.runtime.policies import ApprovalPolicy, Guardrail, Middleware
 from agent_frame.tools.base import Tool, ToolProvider, ToolSandbox
 
@@ -39,4 +40,5 @@ class AgentSpec:
     approval: ApprovalPolicy | None = None
     tool_providers: Sequence[ToolProvider] = ()
     sandbox: ToolSandbox | None = None
+    tracers: Sequence[Tracer] = ()
     metadata: dict[str, Any] = field(default_factory=dict)

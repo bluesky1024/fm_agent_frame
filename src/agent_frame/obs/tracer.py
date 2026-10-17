@@ -1,49 +1,84 @@
-"""可观测性：结构化日志 + 调用追踪（简单实现）。
+"""事件驱动的追踪器：Console / JSONL 两种输出。
 
-后续可扩展为 OpenTelemetry、调用链记录、token 用量统计等。
+Tracer 是运行事件的消费者，不侵入 AgentRuntime 的循环逻辑。
 """
 
 from __future__ import annotations
 
-import logging
-import uuid
-from contextvars import ContextVar
-from typing import Any, Protocol
+import json
+from pathlib import Path
+from typing import Protocol
 
-logger = logging.getLogger("agent_frame")
-
-_trace_id: ContextVar[str] = ContextVar("trace_id", default="")
+from agent_frame.core.events import (
+    AgentEvent,
+    ContextBuilt,
+    Error,
+    LLMCompleted,
+    LLMDelta,
+    RunEnd,
+    RunStart,
+    StepStart,
+    ToolCallRequested,
+    ToolResult,
+)
 
 
 class Tracer(Protocol):
-    def log_llm_call(self, messages: Any, tools: Any | None = None) -> None: ...
+    """消费运行时事件。"""
 
-    def log_tool_call(self, name: str, arguments: dict, output: str) -> None: ...
+    def on_event(self, event: AgentEvent) -> None: ...
+
+    def close(self) -> None: ...
 
 
 class ConsoleTracer:
-    """把调用过程打到标准日志的简单 Tracer。"""
+    """把事件打到标准输出：适合教学示例与本地调试。"""
 
-    def log_llm_call(self, messages: Any, tools: Any | None = None) -> None:
-        logger.info(
-            "[trace=%s] LLM 调用，消息数=%d，工具数=%d",
-            _trace_id.get(),
-            len(messages),
-            len(tools or []),
-        )
+    def on_event(self, event: AgentEvent) -> None:
+        if isinstance(event, RunStart):
+            print(f"\n[trace] 运行开始 {event.run_id} session={event.session_id}")
+        elif isinstance(event, StepStart):
+            print(f"[trace] 步骤 {event.step}")
+        elif isinstance(event, ContextBuilt):
+            print(f"[trace] 上下文 {event.message_count} 条 / ~{event.token_estimate} tokens")
+        elif isinstance(event, LLMDelta):
+            print(event.text, end="", flush=True)
+        elif isinstance(event, LLMCompleted):
+            print(f"  [usage] {event.usage.model_dump()}")
+        elif isinstance(event, ToolCallRequested):
+            print(f"[trace] 工具请求 {event.tool_call.name} {event.tool_call.arguments}")
+        elif isinstance(event, ToolResult):
+            status = "失败" if event.error else "成功"
+            print(f"[trace] 工具{status} {event.name}: {event.error or event.content}")
+        elif isinstance(event, Error):
+            print(f"[trace] 错误：{event.error}（recoverable={event.recoverable}）")
+        elif isinstance(event, RunEnd):
+            print(
+                f"[trace] 运行结束 steps={event.result.steps} "
+                f"tokens={event.result.usage.total_tokens}"
+            )
 
-    def log_tool_call(self, name: str, arguments: dict, output: str) -> None:
-        logger.info(
-            "[trace=%s] 工具 %s(%r) → %s",
-            _trace_id.get(),
-            name,
-            arguments,
-            output[:200],
-        )
+    def close(self) -> None:
+        return None
 
 
-def new_trace_id() -> str:
-    """生成并设置一个当前上下文的 trace id。"""
-    tid = uuid.uuid4().hex[:12]
-    _trace_id.set(tid)
-    return tid
+class JSONLTracer:
+    """把每个事件写一行 JSON，供离线分析与评测复盘。"""
+
+    def __init__(self, path: str | Path) -> None:
+        self._path = Path(path)
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._file = self._path.open("w", encoding="utf-8")
+
+    @property
+    def path(self) -> Path:
+        return self._path
+
+    def on_event(self, event: AgentEvent) -> None:
+        payload = event.model_dump(mode="json")
+        self._file.write(json.dumps(payload, ensure_ascii=False) + "\n")
+        self._file.flush()
+
+    def close(self) -> None:
+        if not self._file.closed:
+            self._file.close()

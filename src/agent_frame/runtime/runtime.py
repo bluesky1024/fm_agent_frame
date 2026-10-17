@@ -9,8 +9,9 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 
 from agent_frame.context.builder import ContextBuilder
 from agent_frame.context.compaction import compact_if_needed, history_view
@@ -34,16 +35,38 @@ from agent_frame.core.events import (
 from agent_frame.core.messages import Message, ToolCall
 from agent_frame.core.types import AgentResult, TokenUsage
 from agent_frame.llm.base import ChatResult
-from agent_frame.runtime.policies import RunContext
+from agent_frame.runtime.policies import Guardrail, RunContext
 from agent_frame.runtime.session import Session
 from agent_frame.runtime.spec import AgentSpec
 from agent_frame.tools import ToolExecutor, ToolRegistry, ToolResult
+
+logger = logging.getLogger("agent_frame.runtime")
 
 
 class AgentRuntime:
     """执行 AgentSpec 的循环引擎。"""
 
     async def run(
+        self, spec: AgentSpec, session: Session, user_input: str
+    ) -> AsyncIterator[AgentEvent]:
+        """执行一轮对话，把事件分发给 Tracer 并同时输出给调用方。"""
+        tracers = list(spec.tracers)
+        try:
+            async for event in self._run(spec, session, user_input):
+                for tracer in tracers:
+                    try:
+                        tracer.on_event(event)
+                    except Exception:  # noqa: BLE001 - 追踪失败不应中断运行
+                        logger.exception("Tracer 处理事件失败")
+                yield event
+        finally:
+            for tracer in tracers:
+                try:
+                    tracer.close()
+                except Exception:  # noqa: BLE001
+                    logger.exception("Tracer 关闭失败")
+
+    async def _run(
         self, spec: AgentSpec, session: Session, user_input: str
     ) -> AsyncIterator[AgentEvent]:
         """执行一轮对话，以事件流输出全过程。"""
@@ -70,6 +93,28 @@ class AgentRuntime:
             for step in range(spec.max_steps):
                 yield StepStart(step=step)
 
+                run_context = RunContext(
+                    run_id=run_id,
+                    session_id=session.id,
+                    spec_name=spec.name,
+                    step=step,
+                    usage=total_usage,
+                )
+                if step == 0 and spec.input_guards:
+                    allowed, reason, checked = await _check_guards(
+                        spec.input_guards, user_input, run_context
+                    )
+                    if not allowed:
+                        result_value = AgentResult(output="", usage=total_usage, steps=steps_taken)
+                        session.last_run = result_value
+                        yield ErrorEvent(error=f"输入被护栏拦截: {reason}", recoverable=False)
+                        yield RunEnd(result=result_value)
+                        return
+                    if checked != user_input:
+                        user_input = checked
+                        session.history[-1] = Message.user(checked)
+                        await session.memory.save(session.id, session.history)
+
                 await compact_if_needed(
                     session.memory,
                     session.id,
@@ -88,13 +133,6 @@ class AgentRuntime:
                     token_estimate=context.token_estimate,
                 )
 
-                run_context = RunContext(
-                    run_id=run_id,
-                    session_id=session.id,
-                    spec_name=spec.name,
-                    step=step,
-                    usage=total_usage,
-                )
                 messages = context.messages
                 for middleware in spec.middleware:
                     messages = await middleware.before_llm(run_context, messages)
@@ -113,6 +151,27 @@ class AgentRuntime:
 
                 steps_taken += 1
                 total_usage = total_usage + completion.usage
+
+                if not completion.tool_calls and spec.output_guards:
+                    allowed, reason, checked = await _check_guards(
+                        spec.output_guards, completion.content or "", run_context
+                    )
+                    if not allowed:
+                        last_text = completion.content or last_text
+                        yield LLMCompleted(
+                            message=Message.assistant(content=completion.content),
+                            usage=completion.usage,
+                        )
+                        result_value = AgentResult(
+                            output=last_text, usage=total_usage, steps=steps_taken
+                        )
+                        session.last_run = result_value
+                        yield ErrorEvent(error=f"输出被护栏拦截: {reason}", recoverable=False)
+                        yield RunEnd(result=result_value)
+                        return
+                    if checked != (completion.content or ""):
+                        completion = completion.model_copy(update={"content": checked})
+
                 last_text = completion.content or last_text
                 yield LLMCompleted(
                     message=Message.assistant(
@@ -143,8 +202,26 @@ class AgentRuntime:
                     calls.append(call)
                     yield ToolCallRequested(tool_call=call)
 
+                result_map: dict[int, ToolResult] = {}
+                to_execute: list[tuple[int, ToolCall]] = []
+                for index, call in enumerate(calls):
+                    if spec.approval is None:
+                        to_execute.append((index, call))
+                        continue
+                    decision = await spec.approval.approve(call, context=run_context)
+                    if decision.approved:
+                        to_execute.append((index, call))
+                    else:
+                        result_map[index] = ToolResult(
+                            tool_call_id=call.id,
+                            name=call.name,
+                            error=f"工具调用被拒绝: {decision.reason or '未批准'}",
+                            error_type="approval",
+                            recoverable=True,
+                        )
+
                 try:
-                    tool_results = await executor.execute_many(calls)
+                    executed = await executor.execute_many([call for _, call in to_execute])
                 except ToolError as exc:
                     yield ErrorEvent(error=str(exc), recoverable=False)
                     result_value = AgentResult(
@@ -153,6 +230,9 @@ class AgentRuntime:
                     session.last_run = result_value
                     yield RunEnd(result=result_value)
                     return
+                for (index, _), tool_result in zip(to_execute, executed):
+                    result_map[index] = tool_result
+                tool_results = [result_map[index] for index in range(len(calls))]
 
                 for call, tool_result in zip(calls, tool_results):
                     for middleware in spec.middleware:
@@ -196,6 +276,22 @@ class AgentRuntime:
             if isinstance(event, RunEnd):
                 result = event.result
         return result
+
+
+async def _check_guards(
+    guards: Sequence[Guardrail],
+    text: str,
+    context: RunContext,
+) -> tuple[bool, str | None, str]:
+    """依次执行护栏；任一拒绝即返回，replacement 会覆盖后续文本。"""
+    current = text
+    for guard in guards:
+        decision = await guard.check(current, context=context)
+        if not decision.allowed:
+            return False, decision.reason or "未说明原因", current
+        if decision.replacement is not None:
+            current = decision.replacement
+    return True, None, current
 
 
 def _tool_message(call: ToolCall, result: ToolResult) -> Message:
