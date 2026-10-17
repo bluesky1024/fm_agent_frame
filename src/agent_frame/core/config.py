@@ -19,6 +19,8 @@ class Settings(BaseSettings):
 
     # Agent 循环
     max_steps: int = 8
+    # 单次工具调用超时（秒）
+    tool_timeout: float = 30.0
 
     # LLM 调用
     request_timeout: float = 60.0

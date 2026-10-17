@@ -1,11 +1,18 @@
-"""工具抽象：Tool 协议 + 把 Tool 转成 LLM 可识别的 ToolSpec。"""
+"""工具抽象：自包含的 Tool / ToolResult / ToolProvider / ToolSandbox 协议。
+
+本层只依赖 ``core``：工具定义、执行结果与动态提供者都不引用 LLM 类型。
+"""
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from typing import Any, ClassVar, Protocol
 
-from agent_frame.llm.base import ToolSpec
+from pydantic import BaseModel
+
+from agent_frame.core.types import ToolSpec
+
+__all__ = ["Tool", "ToolProvider", "ToolResult", "ToolSandbox", "ToolSpec", "to_tool_spec"]
 
 
 class Tool(Protocol):
@@ -24,6 +31,39 @@ class Tool(Protocol):
     # run 的具体参数由 parameters(JSON Schema) 动态决定，静态类型无法逐一定义；
     # 用 Callable[..., Awaitable[str]] 表示「任意参数、返回可等待的字符串」。
     run: Callable[..., Awaitable[str]]
+
+
+class ToolResult(BaseModel):
+    """一次工具执行的结构化结果。
+
+    - 成功：``content`` 有值；
+    - 失败：``error`` / ``error_type`` 有值，``recoverable`` 表示是否可回填给模型。
+    """
+
+    tool_call_id: str
+    name: str
+    content: str | None = None
+    error: str | None = None
+    error_type: str | None = None
+    recoverable: bool = True
+
+    @property
+    def ok(self) -> bool:
+        return self.error is None
+
+
+class ToolProvider(Protocol):
+    """动态工具提供者（如 MCP）：在运行时提供额外工具并执行。"""
+
+    async def list_tools(self) -> Sequence[ToolSpec]: ...
+
+    async def call(self, name: str, arguments: dict[str, Any]) -> str: ...
+
+
+class ToolSandbox(Protocol):
+    """工具执行沙箱：包装本地工具调用，首版可以是 no-op。"""
+
+    async def execute(self, tool: Tool, arguments: dict[str, Any]) -> str: ...
 
 
 def to_tool_spec(tool: Tool) -> ToolSpec:

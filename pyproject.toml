@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "从零手写的 Agent 编排框架，用于学习 AI Agent 的核心机制"
 requires-python = ">=3.12"
 dependencies = [
+    "jsonschema>=4.20",
     "openai>=1.40",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
@@ -45,18 +46,23 @@ select = ["E", "F", "I", "W"]
 
 [tool.mypy]
 python_version = "3.12"
-# tools 在票 03 重构后再纳入检查并收紧为 strict
+# 核心四包（core/runtime/llm/tools）随重构逐步启用严格检查
 files = [
     "src/agent_frame/core",
     "src/agent_frame/runtime",
     "src/agent_frame/llm",
+    "src/agent_frame/tools",
 ]
 warn_unused_configs = true
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-# tools 在票 03 重构后再收紧为 strict
-module = ["agent_frame.core.*", "agent_frame.runtime.*", "agent_frame.llm.*"]
+module = [
+    "agent_frame.core.*",
+    "agent_frame.runtime.*",
+    "agent_frame.llm.*",
+    "agent_frame.tools.*",
+]
 strict = true
 
 [tool.importlinter]
@@ -73,11 +79,6 @@ layers = [
     "agent_frame.context",
     "agent_frame.llm | agent_frame.tools | agent_frame.memory | agent_frame.obs",
     "agent_frame.core",
-]
-ignore_imports = [
-    # 遗留违规，票 03 重构工具层时移除
-    "agent_frame.tools.base -> agent_frame.llm.base",
-    "agent_frame.tools.registry -> agent_frame.llm.base",
 ]
 
 [[tool.importlinter.contracts]]
@@ -107,11 +108,6 @@ name = "tools 不依赖 llm"
 type = "forbidden"
 source_modules = ["agent_frame.tools"]
 forbidden_modules = ["agent_frame.llm"]
-ignore_imports = [
-    # 遗留违规，票 03 重构工具层时移除
-    "agent_frame.tools.base -> agent_frame.llm.base",
-    "agent_frame.tools.registry -> agent_frame.llm.base",
-]
 
 [[tool.importlinter.contracts]]
 name = "capabilities 不依赖 interfaces"

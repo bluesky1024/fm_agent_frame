@@ -4,11 +4,15 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] 工具定义自包含，工具层不再 import 任何 LLM 模块
-- [ ] 参数不符合 schema 时返回结构化错误，且不执行工具
-- [ ] 同一批工具并行执行，单次调用有超时限制
-- [ ] 可恢复错误作为工具结果返回；致命错误向上抛出
-- [ ] 内置工具迁移后行为保持一致
-- [ ] 测试全绿，依赖检查通过
+- [x] 工具定义自包含，工具层不再 import 任何 LLM 模块
+- [x] 参数不符合 schema 时返回结构化错误，且不执行工具
+- [x] 同一批工具并行执行，单次调用有超时限制
+- [x] 可恢复错误作为工具结果返回；致命错误向上抛出
+- [x] 内置工具迁移后行为保持一致
+- [x] 测试全绿，依赖检查通过
+
+## Comments
+
+- 2026-10-17: 实现完成。新增 `ToolExecutor`（JSON Schema 校验、`asyncio.gather` 并行、`wait_for` 超时、错误分类、ToolProvider/ToolSandbox 接线）与自包含 `ToolResult`；`ToolSpec` 改为 core 共享类型。新增 `jsonschema` 依赖，mypy 严格检查扩展到 tools，tools→llm 忽略项已从 import-linter 移除。工具测试 11 个，全量 102 passed。
